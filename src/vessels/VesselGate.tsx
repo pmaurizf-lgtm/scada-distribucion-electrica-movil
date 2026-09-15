@@ -48,15 +48,16 @@ export function VesselGate({ onSelect }: VesselGateProps) {
           ))}
         </ul>
         <p className="vessel-gate__hint" style={{ marginTop: '1rem' }}>
-          Build {build}{' '}
-          <button
-            type="button"
-            className="login-gate__link"
-            onClick={() => void forceRefreshApp()}
-          >
-            Forzar actualización de la app
-          </button>
+          Build {build}
         </p>
+        <button
+          type="button"
+          className="btn btn--active"
+          style={{ width: '100%', marginTop: '0.5rem' }}
+          onClick={() => void forceRefreshApp()}
+        >
+          Forzar actualización (borrar caché)
+        </button>
       </div>
     </div>
   )

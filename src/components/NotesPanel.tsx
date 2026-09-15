@@ -207,10 +207,18 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
               Notas de revisión
             </h2>
             <p className="notes-modal__hint">
-              {notes.length} nota{notes.length === 1 ? '' : 's'}
-              {' · '}
               {openBullets} abierta{openBullets === 1 ? '' : 's'}
               {displayName ? ` · ${displayName}` : ''}
+            </p>
+            <p
+              className="notes-modal__hint notes-panel__total-count"
+              style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}
+            >
+              Total en {vesselId}: {notes.length} nota
+              {notes.length === 1 ? '' : 's'}
+              {filter !== 'all'
+                ? ` · filtro «${filter === 'open' ? 'Abiertas' : 'Resueltas'}»`
+                : ''}
             </p>
             <p className="notes-modal__hint notes-panel__sync-hint">
               {syncHint(sync)}

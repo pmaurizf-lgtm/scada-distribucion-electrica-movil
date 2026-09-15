@@ -35,7 +35,8 @@ function markUpdatedAndReload() {
 }
 
 /**
- * Borra SW + caches de la PWA y recarga (para móvil atrapado en build viejo).
+ * Borra SW + caches + IndexedDB (Firestore) + localStorage de notas y recarga.
+ * Para móvil atrapado en build o caché de notas incompleta.
  */
 export async function forceRefreshApp(): Promise<void> {
   try {
@@ -56,6 +57,42 @@ export async function forceRefreshApp(): Promise<void> {
       const regs = await navigator.serviceWorker.getRegistrations()
       await Promise.all(regs.map((r) => r.unregister()))
     }
+  } catch {
+    /* ignore */
+  }
+  try {
+    const idb = indexedDB as IDBFactory & {
+      databases?: () => Promise<{ name?: string }[]>
+    }
+    if (typeof idb.databases === 'function') {
+      const dbs = await idb.databases()
+      await Promise.all(
+        dbs
+          .map((d) => d.name)
+          .filter((n): n is string => Boolean(n))
+          .map(
+            (name) =>
+              new Promise<void>((resolve) => {
+                const req = indexedDB.deleteDatabase(name)
+                req.onsuccess = () => resolve()
+                req.onerror = () => resolve()
+                req.onblocked = () => resolve()
+              }),
+          ),
+      )
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    const keys: string[] = []
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const k = localStorage.key(i)
+      if (k && (k.startsWith('scada-vessel-') || k.includes('firebase'))) {
+        keys.push(k)
+      }
+    }
+    for (const k of keys) localStorage.removeItem(k)
   } catch {
     /* ignore */
   }
