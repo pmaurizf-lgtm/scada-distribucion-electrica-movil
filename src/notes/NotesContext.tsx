@@ -76,6 +76,7 @@ type NotesContextValue = {
     added: number
     updated: number
     skipped: number
+    remoteVisible: number
   }>
   labelFor: (target: NoteTarget) => string
   kindLabelFor: (target: NoteTarget) => string
@@ -304,10 +305,19 @@ export function NotesProvider({
       const result = mergeExcelNotes(vesselId, allNotes, parsed.notes)
       setAllNotes(result.notes)
       await adoptAndPushAll(result.notes)
+      let remoteVisible = 0
+      try {
+        const { pullVesselNotes } = await import('./firebaseSync')
+        const remote = await pullVesselNotes(vesselId)
+        remoteVisible = remote.filter((n) => !n.deletedAt).length
+      } catch {
+        remoteVisible = -1
+      }
       return {
         added: result.added,
         updated: result.updated,
         skipped: result.skipped,
+        remoteVisible,
       }
     },
     [adoptAndPushAll, allNotes, vesselId],

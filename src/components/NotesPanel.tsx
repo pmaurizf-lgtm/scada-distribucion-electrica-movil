@@ -157,8 +157,12 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
     try {
       const data = await file.arrayBuffer()
       const result = await importNotesExcel(data)
+      const cloud =
+        result.remoteVisible < 0
+          ? ' (no se pudo verificar la nube)'
+          : ` · en la nube: ${result.remoteVisible} visibles`
       setStatus(
-        `Restaurado y sincronizado: +${result.added} nuevas, ${result.updated} recuperadas/actualizadas, ${result.skipped} omitidas.`,
+        `Restaurado y sincronizado: +${result.added} nuevas, ${result.updated} recuperadas/actualizadas, ${result.skipped} omitidas${cloud}.`,
       )
     } catch (err) {
       setStatus(
