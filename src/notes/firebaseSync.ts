@@ -3,6 +3,7 @@ import {
   deleteField,
   doc,
   getDocs,
+  getDocsFromServer,
   onSnapshot,
   setDoc,
   type Unsubscribe,
@@ -57,12 +58,32 @@ export function noteToFirestore(note: InspectionNote): Record<string, unknown> {
   })
 }
 
-function fromFirestore(raw: Record<string, unknown>, vesselId: VesselId): InspectionNote | null {
-  if (typeof raw.id !== 'string' || !raw.id) return null
-  if (typeof raw.author !== 'string') return null
-  if (typeof raw.createdAt !== 'string' || typeof raw.updatedAt !== 'string') {
-    return null
+function asIso(value: unknown): string | undefined {
+  if (typeof value === 'string' && value.trim()) return value
+  if (
+    value &&
+    typeof value === 'object' &&
+    'toDate' in value &&
+    typeof (value as { toDate?: unknown }).toDate === 'function'
+  ) {
+    try {
+      return (value as { toDate: () => Date }).toDate().toISOString()
+    } catch {
+      return undefined
+    }
   }
+  return undefined
+}
+
+function fromFirestore(
+  raw: Record<string, unknown>,
+  vesselId: VesselId,
+): InspectionNote | null {
+  if (typeof raw.id !== 'string' || !raw.id) return null
+  const author = typeof raw.author === 'string' ? raw.author : ''
+  const createdAt = asIso(raw.createdAt)
+  const updatedAt = asIso(raw.updatedAt)
+  if (!createdAt || !updatedAt) return null
   if (!raw.target || typeof raw.target !== 'object') return null
   const target = raw.target as NoteTarget
   if (target.kind === 'circuit') {
@@ -72,34 +93,46 @@ function fromFirestore(raw: Record<string, unknown>, vesselId: VesselId): Inspec
   } else {
     return null
   }
-  const deletedAt =
-    typeof raw.deletedAt === 'string' && raw.deletedAt ? raw.deletedAt : undefined
+  const deletedAt = asIso(raw.deletedAt)
   return {
     id: raw.id,
     vesselId,
     target,
-    author: raw.author,
+    author,
     authorId: typeof raw.authorId === 'string' ? raw.authorId : '',
-    createdAt: raw.createdAt,
-    updatedAt: raw.updatedAt,
+    createdAt,
+    updatedAt,
     deletedAt,
     lines: coerceNoteLines(raw.lines),
   }
 }
 
-export async function pullVesselNotes(
+function notesFromSnap(
+  snap: { forEach: (fn: (d: { data: () => unknown }) => void) => void },
   vesselId: VesselId,
-): Promise<InspectionNote[]> {
-  const col = notesCol(vesselId)
-  if (!col) return []
-  await ensureNotesAuth()
-  const snap = await getDocs(col)
+): InspectionNote[] {
   const out: InspectionNote[] = []
   snap.forEach((d) => {
     const n = fromFirestore(d.data() as Record<string, unknown>, vesselId)
     if (n) out.push(n)
   })
   return out
+}
+
+/** Lectura forzada desde servidor (evita caché incompleta en PWA móvil). */
+export async function pullVesselNotes(
+  vesselId: VesselId,
+): Promise<InspectionNote[]> {
+  const col = notesCol(vesselId)
+  if (!col) return []
+  await ensureNotesAuth()
+  try {
+    const snap = await getDocsFromServer(col)
+    return notesFromSnap(snap, vesselId)
+  } catch {
+    const snap = await getDocs(col)
+    return notesFromSnap(snap, vesselId)
+  }
 }
 
 export async function pushVesselNote(note: InspectionNote): Promise<void> {
@@ -152,13 +185,19 @@ export function subscribeVesselNotes(
   if (!col) return null
   return onSnapshot(
     col,
+    { includeMetadataChanges: true },
     (snap) => {
-      const out: InspectionNote[] = []
-      snap.forEach((d) => {
-        const n = fromFirestore(d.data() as Record<string, unknown>, vesselId)
-        if (n) out.push(n)
-      })
-      onChange(out)
+      onChange(notesFromSnap(snap, vesselId))
+      // Si el primer evento viene de caché local incompleta, refrescar del servidor.
+      if (snap.metadata.fromCache) {
+        void getDocsFromServer(col)
+          .then((serverSnap) => {
+            onChange(notesFromSnap(serverSnap, vesselId))
+          })
+          .catch(() => {
+            /* sin red: nos quedamos con caché */
+          })
+      }
     },
     (err) => onError?.(err),
   )
