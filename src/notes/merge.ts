@@ -82,8 +82,9 @@ export function mergeNoteLists(
 }
 
 /**
- * Merge al bajar de la nube: si el servidor tiene la nota viva, gana frente a
- * una baja lógica local más reciente (evita que el móvil se quede en 18).
+ * Merge al bajar de la nube: si el servidor tiene la nota viva y la baja local
+ * es anterior a esa versión, se recupera. Si el usuario acaba de borrar
+ * (deletedAt >= updatedAt remoto), se respeta el borrado.
  */
 export function mergeNoteListsFromServer(
   local: InspectionNote[],
@@ -97,6 +98,10 @@ export function mergeNoteListsFromServer(
       continue
     }
     if (!rem.deletedAt && loc.deletedAt) {
+      if (loc.deletedAt >= rem.updatedAt) {
+        byId.set(rem.id, loc)
+        continue
+      }
       const liveLocal = { ...loc, deletedAt: undefined }
       const merged = mergeNotePair(liveLocal, rem)
       byId.set(rem.id, { ...merged, deletedAt: undefined })

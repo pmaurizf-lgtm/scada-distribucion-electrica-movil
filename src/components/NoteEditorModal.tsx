@@ -377,7 +377,12 @@ export function NoteEditorModal() {
                     '¿Eliminar esta nota de revisión? Desaparecerá en todos los móviles al sincronizar.',
                   )
                 ) {
-                  if (!deleteNote(activeNote.id)) return
+                  if (!deleteNote(activeNote.id)) {
+                    window.alert(
+                      'No se pudo eliminar: solo el autor de la nota puede borrarla (mismo perfil).',
+                    )
+                    return
+                  }
                   if (targetNotes.length <= 1) closeEditor()
                   else openEditor({ target: editor.target, createNew: true })
                 }

@@ -206,6 +206,7 @@ export function NotesProvider({
     (id: string, patch: { lines: NoteLine[] }) => {
       const who = currentAuthor()
       const now = new Date().toISOString()
+      let snapshot: InspectionNote | undefined
       setAllNotes((prev) =>
         prev.map((n) => {
           if (n.id !== id) return n
@@ -221,10 +222,11 @@ export function NotesProvider({
                 textUpdatedAt: textChanged ? now : old?.textUpdatedAt,
               }
             })
-          return { ...n, updatedAt: now, lines }
+          snapshot = { ...n, updatedAt: now, lines }
+          return snapshot
         }),
       )
-      enqueuePush(id)
+      if (snapshot) enqueuePush(id, snapshot)
     },
     [enqueuePush],
   )
@@ -233,10 +235,11 @@ export function NotesProvider({
     (noteId: string, lineId: string, resolved: boolean) => {
       const who = currentAuthor()
       const now = new Date().toISOString()
+      let snapshot: InspectionNote | undefined
       setAllNotes((prev) =>
         prev.map((n) => {
           if (n.id !== noteId) return n
-          return {
+          snapshot = {
             ...n,
             updatedAt: now,
             lines: n.lines.map((l) =>
@@ -252,9 +255,10 @@ export function NotesProvider({
                 : l,
             ),
           }
+          return snapshot
         }),
       )
-      enqueuePush(noteId)
+      if (snapshot) enqueuePush(noteId, snapshot)
     },
     [enqueuePush],
   )
@@ -263,22 +267,21 @@ export function NotesProvider({
     (id: string) => {
       const who = currentAuthor()
       if (!who) return false
-      let allowed = false
       const now = new Date().toISOString()
-      setAllNotes((prev) => {
-        const target = prev.find((n) => n.id === id)
-        if (!target || !isNoteAuthor(target, who.authorId, who.author)) {
-          return prev
-        }
-        allowed = true
-        return prev.map((n) =>
-          n.id === id ? { ...n, deletedAt: now, updatedAt: now } : n,
-        )
-      })
-      if (allowed) enqueuePush(id)
-      return allowed
+      const target = allNotes.find((n) => n.id === id)
+      if (!target || !isNoteAuthor(target, who.authorId, who.author)) {
+        return false
+      }
+      const deleted: InspectionNote = {
+        ...target,
+        deletedAt: now,
+        updatedAt: now,
+      }
+      setAllNotes((prev) => prev.map((n) => (n.id === id ? deleted : n)))
+      enqueuePush(id, deleted)
+      return true
     },
-    [enqueuePush],
+    [allNotes, enqueuePush],
   )
 
   const exportNotesJson = useCallback(() => {
