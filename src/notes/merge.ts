@@ -81,6 +81,32 @@ export function mergeNoteLists(
   return [...byId.values()]
 }
 
+/**
+ * Merge al bajar de la nube: si el servidor tiene la nota viva, gana frente a
+ * una baja lógica local más reciente (evita que el móvil se quede en 18).
+ */
+export function mergeNoteListsFromServer(
+  local: InspectionNote[],
+  remote: InspectionNote[],
+): InspectionNote[] {
+  const byId = new Map(local.map((n) => [n.id, n]))
+  for (const rem of remote) {
+    const loc = byId.get(rem.id)
+    if (!loc) {
+      byId.set(rem.id, rem)
+      continue
+    }
+    if (!rem.deletedAt && loc.deletedAt) {
+      const liveLocal = { ...loc, deletedAt: undefined }
+      const merged = mergeNotePair(liveLocal, rem)
+      byId.set(rem.id, { ...merged, deletedAt: undefined })
+      continue
+    }
+    byId.set(rem.id, mergeNotePair(loc, rem))
+  }
+  return [...byId.values()]
+}
+
 export function notesFingerprint(notes: InspectionNote[]): string {
   return notes
     .map((n) => {

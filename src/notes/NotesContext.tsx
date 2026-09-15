@@ -104,6 +104,7 @@ export function NotesProvider({
     state: syncState,
     lastError: syncLastError,
     lastOkAt: syncLastOkAt,
+    cloudVisible: syncCloudVisible,
     syncNow,
   } = useNotesCloudSync(vesselId, allNotes, setAllNotes)
 
@@ -329,9 +330,17 @@ export function NotesProvider({
       state: syncState,
       lastError: syncLastError,
       lastOkAt: syncLastOkAt,
+      cloudVisible: syncCloudVisible,
       syncNow,
     }),
-    [syncEnabled, syncState, syncLastError, syncLastOkAt, syncNow],
+    [
+      syncEnabled,
+      syncState,
+      syncLastError,
+      syncLastOkAt,
+      syncCloudVisible,
+      syncNow,
+    ],
   )
 
   const value = useMemo<NotesContextValue>(

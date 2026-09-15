@@ -37,6 +37,7 @@ function syncHint(sync: {
   enabled: boolean
   state: string
   lastError: string | null
+  cloudVisible?: number | null
 }): string {
   if (!sync.enabled) {
     return 'Este equipo guarda las notas en local. Configura Firebase para compartirlas.'
@@ -50,7 +51,11 @@ function syncHint(sync: {
       ? `No se pudo sincronizar: ${sync.lastError}`
       : 'No se pudo sincronizar.'
   }
-  return 'Sincronizado. Las notas de este buque se ven en todos los equipos.'
+  const cloud =
+    typeof sync.cloudVisible === 'number'
+      ? ` Nube: ${sync.cloudVisible} visibles.`
+      : ''
+  return `Sincronizado.${cloud}`
 }
 
 type Group = {
@@ -76,7 +81,7 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
   } = useNotes()
   const { ensureProfile, openProfilePrompt, displayName } = useUserProfile()
   const isMobile = useIsMobileUi()
-  const [filter, setFilter] = useState<Filter>('open')
+  const [filter, setFilter] = useState<Filter>('all')
   const [status, setStatus] = useState<string | null>(null)
   const [ioOpen, setIoOpen] = useState(false)
   const [exporting, setExporting] = useState(false)

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { VesselId } from '../vessels/vesselCatalog'
-import { mergeNoteLists, notesFingerprint } from './merge'
+import {
+  mergeNoteListsFromServer,
+  notesFingerprint,
+} from './merge'
 import { isNotesSyncConfigured } from './syncConfig'
 import type { InspectionNote } from './types'
 
@@ -11,9 +14,10 @@ export type NotesSyncInfo = {
   state: NotesSyncState
   lastError: string | null
   lastOkAt: string | null
+  /** Visibles en la última lectura de Firebase (null = aún no). */
+  cloudVisible: number | null
   syncNow: () => void
   enqueuePush: (id: string, snapshot?: InspectionNote) => void
-  /** Sustituye el snapshot local ya (antes del re-render) y sube a la nube. */
   adoptAndPushAll: (notes: InspectionNote[]) => Promise<void>
 }
 
@@ -44,7 +48,9 @@ function savePending(vesselId: VesselId, ids: Set<string>): void {
 export function useNotesCloudSync(
   vesselId: VesselId,
   notes: InspectionNote[],
-  setNotes: (next: InspectionNote[] | ((prev: InspectionNote[]) => InspectionNote[])) => void,
+  setNotes: (
+    next: InspectionNote[] | ((prev: InspectionNote[]) => InspectionNote[]),
+  ) => void,
 ): NotesSyncInfo {
   const enabled = isNotesSyncConfigured()
   const [state, setState] = useState<NotesSyncState>(
@@ -52,11 +58,11 @@ export function useNotesCloudSync(
   )
   const [lastError, setLastError] = useState<string | null>(null)
   const [lastOkAt, setLastOkAt] = useState<string | null>(null)
+  const [cloudVisible, setCloudVisible] = useState<number | null>(null)
   const notesRef = useRef(notes)
   notesRef.current = notes
   const pending = useRef<Set<string>>(loadPending(vesselId))
   const pendingNotes = useRef<Map<string, InspectionNote>>(new Map())
-  /** Evita que un pull en vuelo pise una restauración Excel recién adoptada. */
   const localEpoch = useRef(0)
 
   const markOk = useCallback(() => {
@@ -77,8 +83,6 @@ export function useNotesCloudSync(
       const { pushVesselNote } = await import('./firebaseSync')
       const byId = new Map(notesRef.current.map((n) => [n.id, n]))
       for (const id of ids) {
-        // El snapshot pendiente gana: evita que un pull en vuelo vuelva a
-        // subir una baja lógica y pise una restauración Excel.
         const note = pendingNotes.current.get(id) ?? byId.get(id)
         if (!note) {
           pending.current.delete(id)
@@ -121,31 +125,37 @@ export function useNotesCloudSync(
     )
     await restoreAllBulkWipedNotes()
     const remote = await pullVesselNotes(vesselId)
+    const remoteLive = remote.filter((n) => !n.deletedAt).length
+    setCloudVisible(remoteLive)
     if (epochAtStart !== localEpoch.current) {
-      // Hubo restauración local mientras el pull volvía: no pisar; solo empujar.
       await pushIds([...pending.current])
       return
     }
-    const merged = mergeNoteLists(notesRef.current, remote)
-    // Reaplicar snapshots pendientes (p. ej. Excel) por si el merge trae bajas viejas.
-    for (const [id, snap] of pendingNotes.current) {
+    const merged = mergeNoteListsFromServer(notesRef.current, remote)
+    for (const [id, snap] of [...pendingNotes.current.entries()]) {
+      const rem = remote.find((r) => r.id === id)
+      if (snap.deletedAt && rem && !rem.deletedAt) {
+        pending.current.delete(id)
+        pendingNotes.current.delete(id)
+        continue
+      }
       const cur = merged.find((n) => n.id === id)
       if (!cur) {
         merged.push(snap)
         continue
       }
       const idx = merged.findIndex((n) => n.id === id)
-      merged[idx] = mergeNoteLists([cur], [snap])[0]!
+      merged[idx] = mergeNoteListsFromServer([cur], [snap])[0]!
     }
     notesRef.current = merged
     setNotes(merged)
     const remoteIds = new Set(remote.map((n) => n.id))
     for (const n of merged) {
       const rem = remote.find((r) => r.id === n.id)
+      if (n.deletedAt && rem && !rem.deletedAt) continue
       if (
         !rem ||
         n.updatedAt > rem.updatedAt ||
-        (n.deletedAt && !rem.deletedAt) ||
         (!n.deletedAt && rem.deletedAt)
       ) {
         pending.current.add(n.id)
@@ -201,6 +211,7 @@ export function useNotesCloudSync(
 
   useEffect(() => {
     pending.current = loadPending(vesselId)
+    setCloudVisible(null)
   }, [vesselId])
 
   useEffect(() => {
@@ -230,30 +241,21 @@ export function useNotesCloudSync(
       unsub = subscribeVesselNotes(
         vesselId,
         (remote) => {
-          if (pendingNotes.current.size > 0) {
-            // Durante restauración/subida: fusionar y reaplicar pendientes.
-            setNotes((prev) => {
-              let merged = mergeNoteLists(prev, remote)
-              for (const [id, snap] of pendingNotes.current) {
-                const cur = merged.find((n) => n.id === id)
-                if (!cur) {
-                  merged = [...merged, snap]
-                  continue
-                }
-                merged = merged.map((n) =>
-                  n.id === id ? mergeNoteLists([n], [snap])[0]! : n,
-                )
-              }
-              if (notesFingerprint(merged) === notesFingerprint(prev)) {
-                return prev
-              }
-              notesRef.current = merged
-              return merged
-            })
-            return
-          }
+          setCloudVisible(remote.filter((n) => !n.deletedAt).length)
           setNotes((prev) => {
-            const merged = mergeNoteLists(prev, remote)
+            let merged = mergeNoteListsFromServer(prev, remote)
+            for (const [id, snap] of pendingNotes.current) {
+              const rem = remote.find((r) => r.id === id)
+              if (snap.deletedAt && rem && !rem.deletedAt) continue
+              const cur = merged.find((n) => n.id === id)
+              if (!cur) {
+                merged = [...merged, snap]
+                continue
+              }
+              merged = merged.map((n) =>
+                n.id === id ? mergeNoteListsFromServer([n], [snap])[0]! : n,
+              )
+            }
             if (notesFingerprint(merged) === notesFingerprint(prev)) {
               return prev
             }
@@ -301,6 +303,7 @@ export function useNotesCloudSync(
     state,
     lastError,
     lastOkAt,
+    cloudVisible,
     syncNow,
     enqueuePush,
     adoptAndPushAll,
