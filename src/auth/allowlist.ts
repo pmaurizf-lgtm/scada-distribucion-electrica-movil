@@ -2,6 +2,8 @@ import { doc, getDoc } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
 import { getFirebase } from '../firebase/app'
 
+export type AppRole = 'user' | 'admin'
+
 export function parseAllowedEmails(raw?: string): string[] {
   if (!raw) return []
   return raw
@@ -16,6 +18,14 @@ export function normalizeEmail(email: string): string {
 
 function usesPasswordProvider(user: User): boolean {
   return user.providerData.some((p) => p.providerId === 'password')
+}
+
+function parseRole(raw: unknown): AppRole {
+  const s = String(raw ?? '')
+    .trim()
+    .toLowerCase()
+  if (s === 'admin' || s === 'superuser' || s === 'super') return 'admin'
+  return 'user'
 }
 
 /**
@@ -44,4 +54,34 @@ export async function isUserAllowed(user: User): Promise<boolean> {
 
   if (envList.length === 0) return true
   return false
+}
+
+/**
+ * Rol de la cuenta:
+ * - VITE_ADMIN_EMAILS (lista de correos admin), o
+ * - Firestore allowlist/{email}.role = 'admin' | 'superuser'
+ * El resto son usuarios normales.
+ */
+export async function resolveUserRole(user: User): Promise<AppRole> {
+  const normalized = normalizeEmail(user.email ?? '')
+  if (!normalized) return 'user'
+
+  const envAdmins = parseAllowedEmails(import.meta.env.VITE_ADMIN_EMAILS)
+  if (envAdmins.includes(normalized)) return 'admin'
+
+  const fb = getFirebase()
+  if (fb) {
+    try {
+      const snap = await getDoc(doc(fb.db, 'allowlist', normalized))
+      if (snap.exists()) {
+        const data = snap.data() as { enabled?: boolean; role?: unknown }
+        if (data.enabled === false) return 'user'
+        return parseRole(data.role)
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return 'user'
 }

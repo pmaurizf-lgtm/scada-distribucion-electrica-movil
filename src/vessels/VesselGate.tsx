@@ -8,7 +8,7 @@ type VesselGateProps = {
 
 /** Pantalla obligatoria al abrir la app: elegir escritorio de buque. */
 export function VesselGate({ onSelect }: VesselGateProps) {
-  const { email, signOutUser } = useAuth()
+  const { email, signOutUser, isAdmin } = useAuth()
   const build = appBuildLabel()
   return (
     <div className="vessel-gate" role="dialog" aria-labelledby="vessel-gate-title">
@@ -23,7 +23,8 @@ export function VesselGate({ onSelect }: VesselGateProps) {
         </p>
         {email ? (
           <p className="vessel-gate__hint login-gate__session">
-            Sesión: {email}{' '}
+            Sesión: {email}
+            {isAdmin ? ' · administrador' : ''}{' '}
             <button
               type="button"
               className="login-gate__link"

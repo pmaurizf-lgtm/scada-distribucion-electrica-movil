@@ -54,6 +54,7 @@ import { NoteEditorModal } from './NoteEditorModal'
 import { NotesPanel } from './NotesPanel'
 import { useNotes } from '../notes/NotesContext'
 import { useUserProfile } from '../notes/UserProfileContext'
+import { useAuth } from '../auth'
 
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 2.5
@@ -106,6 +107,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const isMobile = useIsMobileUi()
   const { notes } = useNotes()
   const { displayName, openProfilePrompt } = useUserProfile()
+  const { isAdmin } = useAuth()
   const [notesPanelOpen, setNotesPanelOpen] = useState(false)
   const [chromeCollapsed, setChromeCollapsed] = useState(false)
   const [protectionStatus, setProtectionStatus] = useState<ProtectionStatusMap>(
@@ -722,13 +724,14 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                     >
                       {simulationActive ? 'Dejar de simular' : 'Simular estado'}
                     </button>
+                    {isAdmin && (
                     <details
                       ref={candadosDetailsRef}
                       className={`candados-menu${lockTool !== 'none' ? ' candados-menu--active' : ''}`}
                     >
                       <summary
                         className={`btn btn--lock${lockTool !== 'none' ? ' btn--active' : ''}`}
-                        title="Poner / quitar candado o cargar lista desde Excel"
+                        title="Poner / quitar candado o cargar lista desde Excel (solo admin)"
                       >
                         Candados
                       </summary>
@@ -787,6 +790,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                       hidden
                       onChange={handleLockExcelChange}
                     />
+                    )}
                 </div>
               </div>
               <div className="zoom-controls" role="group" aria-label="Zoom">

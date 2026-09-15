@@ -14,6 +14,7 @@ import { vesselById } from '../vessels/vesselCatalog'
 import { useUserProfile } from '../notes/UserProfileContext'
 import { useIsMobileUi } from '../hooks/useIsMobileUi'
 import { forceRefreshApp } from '../registerPwa'
+import { useAuth } from '../auth'
 
 type Filter = 'open' | 'resolved' | 'all'
 
@@ -80,6 +81,7 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
     sync,
   } = useNotes()
   const { ensureProfile, openProfilePrompt, displayName } = useUserProfile()
+  const { isAdmin } = useAuth()
   const isMobile = useIsMobileUi()
   const [filter, setFilter] = useState<Filter>('all')
   const [status, setStatus] = useState<string | null>(null)
@@ -280,17 +282,19 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
               >
                 {exporting ? 'Generando…' : 'Exportar Excel'}
               </button>
-              <label
-                className="btn notes-panel__file-btn"
-                title="Recupera notas desde un Excel exportado con Exportar Excel"
-              >
-                {isMobile ? 'Restaurar notas…' : 'Restaurar Excel…'}
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                  onChange={(e) => void handleRestoreExcel(e)}
-                />
-              </label>
+              {isAdmin && (
+                <label
+                  className="btn notes-panel__file-btn"
+                  title="Recupera notas desde un Excel exportado con Exportar Excel (solo admin)"
+                >
+                  {isMobile ? 'Restaurar notas…' : 'Restaurar Excel…'}
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    onChange={(e) => void handleRestoreExcel(e)}
+                  />
+                </label>
+              )}
             </div>
             {isMobile && (
               <button
@@ -327,22 +331,26 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                 <button type="button" className="btn" onClick={handleExportJson}>
                   Exportar JSON
                 </button>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => importRef.current?.click()}
-                >
-                  Importar…
-                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => importRef.current?.click()}
+                  >
+                    Importar…
+                  </button>
+                )}
               </>
             )}
-            <input
-              ref={importRef}
-              type="file"
-              accept="application/json,.json"
-              hidden
-              onChange={handleImport}
-            />
+            {isAdmin && (
+              <input
+                ref={importRef}
+                type="file"
+                accept="application/json,.json"
+                hidden
+                onChange={handleImport}
+              />
+            )}
           </div>
         </div>
 
