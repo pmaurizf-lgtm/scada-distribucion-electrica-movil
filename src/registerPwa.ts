@@ -1,7 +1,7 @@
 import { registerSW } from 'virtual:pwa-register'
 
 /** Intervalo de sondeo de una nueva versión (ms). */
-const UPDATE_CHECK_MS = 5 * 60 * 1000
+const UPDATE_CHECK_MS = 60 * 1000
 
 /** Flag de sesión: tras reload por SW, mostrar aviso breve. */
 export const PWA_UPDATED_FLAG = 'scada-f110-pwa-just-updated'
@@ -35,13 +35,48 @@ function markUpdatedAndReload() {
 }
 
 /**
+ * Borra SW + caches de la PWA y recarga (para móvil atrapado en build viejo).
+ */
+export async function forceRefreshApp(): Promise<void> {
+  try {
+    sessionStorage.setItem(PWA_UPDATED_FLAG, '1')
+  } catch {
+    /* ignore */
+  }
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys()
+      await Promise.all(keys.map((k) => caches.delete(k)))
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(regs.map((r) => r.unregister()))
+    }
+  } catch {
+    /* ignore */
+  }
+  const url = new URL(window.location.href)
+  url.searchParams.set('_scada_refresh', String(Date.now()))
+  window.location.replace(url.toString())
+}
+
+/** Etiqueta corta del build publicado (GitHub SHA o fecha local). */
+export function appBuildLabel(): string {
+  const v = import.meta.env.VITE_APP_BUILD
+  if (typeof v === 'string' && v.trim()) {
+    return v.trim().slice(0, 7)
+  }
+  return 'dev'
+}
+
+/**
  * PWA: al publicar un build nuevo, el service worker (skipWaiting + clientsClaim)
  * toma el control y la página se recarga sola — al abrir la app, al volver a
  * primer plano o al recuperar red.
- *
- * En GitHub Pages el SW viejo sigue sirviendo index.html/JS cacheados: por eso
- * localhost (sin SW) muestra el globo y la web publicada no, hasta recargar
- * con la versión nueva.
  */
 export function registerPwa(): void {
   if (!('serviceWorker' in navigator)) return
@@ -51,7 +86,6 @@ export function registerPwa(): void {
   try {
     justReloaded = sessionStorage.getItem(PWA_RELOADING) === '1'
     if (justReloaded) {
-      // Evitar bucle: el SW puede volver a disparar controllerchange al reclamar.
       window.setTimeout(() => {
         try {
           sessionStorage.removeItem(PWA_RELOADING)
@@ -59,6 +93,11 @@ export function registerPwa(): void {
           /* ignore */
         }
       }, 2500)
+    }
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('_scada_refresh')) {
+      url.searchParams.delete('_scada_refresh')
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash)
     }
   } catch {
     /* ignore */
@@ -85,7 +124,7 @@ export function registerPwa(): void {
             const fresh = await pingSwScript(swUrl)
             if (fresh) await registration.update()
           } catch {
-            /* ignore: offline / SW ocupado */
+            /* ignore */
           }
         })()
       }
@@ -108,7 +147,6 @@ export function registerPwa(): void {
   })
 }
 
-/** Consume el flag de actualización (una sola vez por reload). */
 export function consumePwaUpdatedFlag(): boolean {
   try {
     if (sessionStorage.getItem(PWA_UPDATED_FLAG) !== '1') return false

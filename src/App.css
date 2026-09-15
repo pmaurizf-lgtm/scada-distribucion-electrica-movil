@@ -10733,3 +10733,57 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 
+
+/* —— Acceso con correo (mismo Firebase que escritorio) —— */
+.login-gate__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.login-gate__label {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.login-gate__input {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  color: var(--text);
+  font: inherit;
+}
+.login-gate__input:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+.login-gate__error {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #f0a8a0;
+}
+.login-gate__submit {
+  width: 100%;
+  margin-top: 0.55rem;
+  justify-content: center;
+}
+.login-gate__session {
+  margin-bottom: 0.85rem;
+}
+.login-gate__link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.login-gate__link:hover,
+.login-gate__link:focus-visible {
+  color: var(--text);
+}

@@ -9,6 +9,7 @@ import { NotesProvider, UserProfileProvider, useUserProfile } from './notes'
 import { UserProfileModal } from './components/UserProfileModal'
 import { hasDisplayName } from './notes/userProfile'
 import { useScadaMobileHtmlClass } from './hooks/useScadaMobileHtmlClass'
+import { AuthProvider, LoginGate, useAuth } from './auth'
 
 function AppShell({
   vesselId,
@@ -46,22 +47,35 @@ function VesselGateScreen({
   return <VesselGate onSelect={onSelect} />
 }
 
-export default function App() {
-  /** Sesión: null hasta elegir buque (obligatorio en cada apertura). */
+function SignedInApp() {
   const [activeVessel, setActiveVessel] = useState<VesselId | null>(null)
+  const { status } = useAuth()
+  useScadaMobileHtmlClass()
+
+  if (status !== 'ready') {
+    return <LoginGate />
+  }
 
   return (
+    <UserProfileProvider>
+      {activeVessel == null ? (
+        <VesselGateScreen onSelect={setActiveVessel} />
+      ) : (
+        <AppShell
+          vesselId={activeVessel}
+          onVesselChange={setActiveVessel}
+        />
+      )}
+    </UserProfileProvider>
+  )
+}
+
+export default function App() {
+  return (
     <ErrorBoundary>
-      <UserProfileProvider>
-        {activeVessel == null ? (
-          <VesselGateScreen onSelect={setActiveVessel} />
-        ) : (
-          <AppShell
-            vesselId={activeVessel}
-            onVesselChange={setActiveVessel}
-          />
-        )}
-      </UserProfileProvider>
+      <AuthProvider>
+        <SignedInApp />
+      </AuthProvider>
     </ErrorBoundary>
   )
 }

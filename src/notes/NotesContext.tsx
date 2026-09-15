@@ -34,6 +34,7 @@ import {
   useNotesCloudSync,
   type NotesSyncInfo,
 } from './useNotesCloudSync'
+import { mergeExcelNotes, parseNotesExcel } from './importExcel'
 
 export type NotesEditorSession = {
   target: NoteTarget
@@ -71,9 +72,14 @@ type NotesContextValue = {
     updated: number
     skipped: number
   }
+  importNotesExcel: (data: ArrayBuffer) => Promise<{
+    added: number
+    updated: number
+    skipped: number
+  }>
   labelFor: (target: NoteTarget) => string
   kindLabelFor: (target: NoteTarget) => string
-  sync: Omit<NotesSyncInfo, 'enqueuePush'>
+  sync: Omit<NotesSyncInfo, 'enqueuePush' | 'adoptAndPushAll'>
 }
 
 const NotesContext = createContext<NotesContextValue | null>(null)
@@ -92,6 +98,7 @@ export function NotesProvider({
   const notes = useMemo(() => visibleNotes(allNotes), [allNotes])
   const {
     enqueuePush,
+    adoptAndPushAll,
     enabled: syncEnabled,
     state: syncState,
     lastError: syncLastError,
@@ -281,14 +288,29 @@ export function NotesProvider({
       const parsed: unknown = JSON.parse(raw)
       const result = mergeImportedNotes(vesselId, allNotes, parsed)
       setAllNotes(result.notes)
-      for (const n of result.notes) enqueuePush(n.id)
+      void adoptAndPushAll(result.notes)
       return {
         added: result.added,
         updated: result.updated,
         skipped: result.skipped,
       }
     },
-    [allNotes, enqueuePush, vesselId],
+    [adoptAndPushAll, allNotes, vesselId],
+  )
+
+  const importNotesExcel = useCallback(
+    async (data: ArrayBuffer) => {
+      const parsed = await parseNotesExcel(data, vesselId)
+      const result = mergeExcelNotes(vesselId, allNotes, parsed.notes)
+      setAllNotes(result.notes)
+      await adoptAndPushAll(result.notes)
+      return {
+        added: result.added,
+        updated: result.updated,
+        skipped: result.skipped,
+      }
+    },
+    [adoptAndPushAll, allNotes, vesselId],
   )
 
   const sync = useMemo(
@@ -319,6 +341,7 @@ export function NotesProvider({
       canEditNote,
       exportNotesJson,
       importNotesJson,
+      importNotesExcel,
       labelFor: labelForNoteTarget,
       kindLabelFor: kindLabelForNoteTarget,
       sync,
@@ -339,6 +362,7 @@ export function NotesProvider({
       canEditNote,
       exportNotesJson,
       importNotesJson,
+      importNotesExcel,
       sync,
     ],
   )

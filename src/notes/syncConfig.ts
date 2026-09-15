@@ -1,8 +1,7 @@
 /**
- * Sincronización de notas entre móviles.
+ * Firebase (acceso restringido + notas).
  *
- * Punto común: proyecto Firebase (Firestore + Auth anónima).
- * Sin estas variables la app sigue en local (este móvil).
+ * Sin estas variables la app no deja entrar: hace falta validar al usuario.
  *
  * VITE_FIREBASE_API_KEY
  * VITE_FIREBASE_AUTH_DOMAIN

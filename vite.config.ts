@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+﻿import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -13,7 +13,7 @@ export default defineConfig({
         name: 'F110 - Distribution Power System',
         short_name: 'F110 DPS',
         description:
-          'SCADA de distribución eléctrica de un buque — consulta y simulación unifilar',
+          'SCADA de distribuciÃ³n elÃ©ctrica de un buque â€” consulta y simulaciÃ³n unifilar',
         lang: 'es',
         theme_color: '#0e1614',
         background_color: '#0e1614',
@@ -45,14 +45,24 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         cleanupOutdatedCaches: true,
-        // Nueva clave: al activar el SW nuevo se abandonan caches de Pages viejas
-        cacheId: 'scada-f110-v2',
-        // El bundle unifilar (abtDownstream + topología) supera con creces 2 MiB
+        // Nueva clave: fuerza abandonar caches PWA viejas en el mÃ³vil
+        cacheId: 'scada-f110-movil-v6-auth',
+        // El bundle unifilar (abtDownstream + topologÃ­a) supera con creces 2 MiB
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         globPatterns: [
           '**/*.{js,css,html,ico,svg,png,woff2,json,xlsx}',
         ],
         navigateFallback: 'index.html',
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'scada-html-movil-v6',
+              networkTimeoutSeconds: 4,
+            },
+          },
+        ],
       },
       devOptions: {
         // Evita ruido del SW en desarrollo local
@@ -68,3 +78,4 @@ export default defineConfig({
     },
   },
 })
+

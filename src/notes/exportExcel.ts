@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import { vesselById, type VesselId } from '../vessels/vesselCatalog'
 import { kindLabelForNoteTarget, labelForNoteTarget } from './labels'
+import { NOTES_BACKUP_SHEET } from './importExcel'
 import {
   isNoteFullyResolved,
   openLineCount,
@@ -564,7 +565,63 @@ export async function exportNotesExcel(
   addSummarySheet(wb, vessel.label, notes)
   addNotesSheet(wb, vessel.label, notes)
   addBulletsSheet(wb, vessel.label, notes)
+  addBackupSheet(wb, vesselId, notes)
 
   const day = new Date().toISOString().slice(0, 10)
   await saveWorkbook(wb, `notas-${vesselId}-${day}.xlsx`)
+}
+
+function addBackupSheet(
+  wb: ExcelJS.Workbook,
+  vesselId: VesselId,
+  notes: InspectionNote[],
+): void {
+  const ws = wb.addWorksheet(NOTES_BACKUP_SHEET)
+  ws.state = 'hidden'
+  ws.addRow([
+    'noteId',
+    'lineId',
+    'vesselId',
+    'kind',
+    'targetId',
+    'author',
+    'authorId',
+    'createdAt',
+    'updatedAt',
+    'deletedAt',
+    'text',
+    'resolved',
+    'resolvedAt',
+    'resolvedBy',
+    'resolvedById',
+    'resolvedUpdatedAt',
+    'textUpdatedAt',
+  ])
+  for (const note of notes) {
+    const tid =
+      note.target.kind === 'circuit'
+        ? note.target.circuitId
+        : note.target.equipmentId
+    for (const line of note.lines) {
+      ws.addRow([
+        note.id,
+        line.id,
+        vesselId,
+        note.target.kind,
+        tid,
+        note.author,
+        note.authorId,
+        note.createdAt,
+        note.updatedAt,
+        note.deletedAt ?? '',
+        line.text,
+        line.resolved ? '1' : '0',
+        line.resolvedAt ?? '',
+        line.resolvedBy ?? '',
+        line.resolvedById ?? '',
+        line.resolvedUpdatedAt ?? '',
+        line.textUpdatedAt ?? '',
+      ])
+    }
+  }
 }

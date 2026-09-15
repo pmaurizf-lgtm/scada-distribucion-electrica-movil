@@ -13,6 +13,7 @@ import {
 import { vesselById } from '../vessels/vesselCatalog'
 import { useUserProfile } from '../notes/UserProfileContext'
 import { useIsMobileUi } from '../hooks/useIsMobileUi'
+import { forceRefreshApp } from '../registerPwa'
 
 type Filter = 'open' | 'resolved' | 'all'
 
@@ -38,18 +39,18 @@ function syncHint(sync: {
   lastError: string | null
 }): string {
   if (!sync.enabled) {
-    return 'Este móvil guarda en local. Configura Firebase para compartir entre teléfonos.'
+    return 'Este equipo guarda las notas en local. Configura Firebase para compartirlas.'
   }
   if (sync.state === 'offline') {
     return 'Sin red: las notas se enviarán al reconectar.'
   }
-  if (sync.state === 'syncing') return 'Sincronizando con el resto de móviles…'
+  if (sync.state === 'syncing') return 'Sincronizando notas…'
   if (sync.state === 'error') {
     return sync.lastError
       ? `No se pudo sincronizar: ${sync.lastError}`
       : 'No se pudo sincronizar.'
   }
-  return 'Sincronizado. Las notas de este buque se ven en todos los móviles.'
+  return 'Sincronizado. Las notas de este buque se ven en todos los equipos.'
 }
 
 type Group = {
@@ -68,6 +69,7 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
     setLineResolved,
     exportNotesJson,
     importNotesJson,
+    importNotesExcel,
     labelFor,
     kindLabelFor,
     sync,
@@ -147,6 +149,24 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
     setStatus(`JSON exportado: ${notes.length} notas de ${vesselLabel}.`)
   }
 
+  const handleRestoreExcel = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setStatus('Restaurando desde Excel y subiendo a la nube…')
+    try {
+      const data = await file.arrayBuffer()
+      const result = await importNotesExcel(data)
+      setStatus(
+        `Restaurado y sincronizado: +${result.added} nuevas, ${result.updated} recuperadas/actualizadas, ${result.skipped} omitidas.`,
+      )
+    } catch (err) {
+      setStatus(
+        err instanceof Error ? err.message : 'No se pudo leer el Excel de notas.',
+      )
+    }
+  }
+
   const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
@@ -186,23 +206,21 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
               {openBullets} abierta{openBullets === 1 ? '' : 's'}
               {displayName ? ` · ${displayName}` : ''}
             </p>
-            {!isMobile && (
-              <p className="notes-modal__hint notes-panel__sync-hint">
-                {syncHint(sync)}
-                {sync.enabled ? (
-                  <>
-                    {' '}
-                    <button
-                      type="button"
-                      className="notes-panel__sync-now"
-                      onClick={() => sync.syncNow()}
-                    >
-                      Actualizar
-                    </button>
-                  </>
-                ) : null}
-              </p>
-            )}
+            <p className="notes-modal__hint notes-panel__sync-hint">
+              {syncHint(sync)}
+              {sync.enabled ? (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="notes-panel__sync-now"
+                    onClick={() => sync.syncNow()}
+                  >
+                    Actualizar
+                  </button>
+                </>
+              ) : null}
+            </p>
           </div>
           <button
             type="button"
@@ -234,13 +252,34 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
             ))}
           </div>
           <div className="notes-panel__io">
-            {isMobile && sync.enabled && (
+            <div className="notes-panel__io-excel">
+              <button
+                type="button"
+                className="btn btn--active"
+                disabled={exporting}
+                onClick={() => void handleExportExcel()}
+              >
+                {exporting ? 'Generando…' : 'Exportar Excel'}
+              </button>
+              <label
+                className="btn notes-panel__file-btn"
+                title="Recupera notas desde un Excel exportado con Exportar Excel"
+              >
+                {isMobile ? 'Restaurar notas…' : 'Restaurar Excel…'}
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  onChange={(e) => void handleRestoreExcel(e)}
+                />
+              </label>
+            </div>
+            {isMobile && (
               <button
                 type="button"
                 className="btn"
-                onClick={() => sync.syncNow()}
+                onClick={() => void forceRefreshApp()}
               >
-                Actualizar
+                Actualizar app
               </button>
             )}
             {isMobile && (
@@ -253,14 +292,6 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                 {ioOpen ? 'Ocultar opciones' : 'Más…'}
               </button>
             )}
-            <button
-              type="button"
-              className="btn btn--active"
-              disabled={exporting}
-              onClick={() => void handleExportExcel()}
-            >
-              {exporting ? 'Generando…' : 'Exportar Excel'}
-            </button>
             {(!isMobile || ioOpen) && (
               <>
                 <button
