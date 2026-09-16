@@ -3097,6 +3097,39 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   box-shadow: 0 0 6px color-mix(in srgb, var(--flow-wire, #e6c200) 28%, transparent);
 }
 
+/* Capa energizaciones: anula brillo de simulación; solo resaltan los SI del Excel */
+.scada--board-energizations .equip-chassis--live:not(.equip-chassis--board-live),
+.scada--board-energizations .hbus-drop__eq--live:not(.hbus-drop__eq--board-live) {
+  border-color: var(--border);
+  box-shadow: none;
+  animation: none;
+}
+
+.scada--board-energizations .hbus-drop--live:not(:has(.equip-chassis--board-live)):not(:has(.hbus-drop__eq--board-live)) {
+  box-shadow: none;
+}
+
+.scada--board-energizations .hbus-drop__leg--flow:not(.hbus-drop__leg--board-live),
+.scada--board-energizations .hbus-drop__leg--from-live:not(.hbus-drop__leg--board-live),
+.scada--board-energizations .hbus-drop__wire--flow:not(.hbus-drop__leg--board-live .hbus-drop__wire--flow),
+.scada--board-energizations .casc-brk--flow:not(.casc-brk--board-live) {
+  animation: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.scada--board-energizations .equip-chassis:not(.equip-chassis--board-live),
+.scada--board-energizations .hbus-drop__eq:not(.hbus-drop__eq--board-live) {
+  opacity: 0.62;
+  filter: saturate(0.45);
+}
+
+.scada--board-energizations .equip-chassis--board-live,
+.scada--board-energizations .hbus-drop__eq--board-live {
+  opacity: 1;
+  filter: none;
+}
+
 .casc-brk--flash {
   animation: brk-flash 0.8s ease 2;
 }
