@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { system690 } from '../data/system690'
+import { useNotes } from '../notes/NotesContext'
 import type { ProtectionState } from '../types'
 import {
   buildStartupReport,
@@ -29,6 +30,7 @@ export function StartupFeedsPanel({
   const MAX_FEEDS_EXCEL_BYTES = 10 * 1024 * 1024
   const ALLOWED_FEEDS_EXCEL_RE = /\.(xlsx|xls|xlsm)$/i
 
+  const { notes } = useNotes()
   const excelRef = useRef<HTMLInputElement>(null)
   const [title, setTitle] = useState('Alimentaciones puesta en marcha')
   const [manualText, setManualText] = useState('')
@@ -114,7 +116,7 @@ export function StartupFeedsPanel({
     setHint('Generando PDF (un árbol por página + tabla) y Excel…')
     try {
       await exportStartupPdf(payload, trees, table)
-      await exportStartupTableExcel(payload)
+      await exportStartupTableExcel(payload, notes)
       setHint(
         `Informe generado · ${title} (PDF: un árbol/página + tabla · Excel)`,
       )
@@ -134,7 +136,7 @@ export function StartupFeedsPanel({
           <h1 className="startup-panel__h1">Puesta en marcha · alimentaciones</h1>
           <p className="startup-panel__sub">
             Carga solo los equipos a alimentar; el SCADA calcula la cadena
-            completa aguas arriba (Normal y Alternativa). La tabla lista cada
+            completa aguas arriba (Normal, Alternativa y AUX 24 V). La tabla lista cada
             escalón hasta el destino; el Excel marca bloques y colores por
             alimentación.
           </p>
@@ -246,7 +248,9 @@ export function StartupFeedsPanel({
                           : '',
                         r.lineKind === 'alternativa'
                           ? 'startup-table__row--alt'
-                          : 'startup-table__row--norm',
+                          : r.lineKind === 'aux'
+                            ? 'startup-table__row--aux'
+                            : 'startup-table__row--norm',
                       ]
                         .filter(Boolean)
                         .join(' ')}
@@ -261,7 +265,9 @@ export function StartupFeedsPanel({
                             className={
                               r.lineKind === 'alternativa'
                                 ? 'startup-table__pill startup-table__pill--alt'
-                                : 'startup-table__pill startup-table__pill--norm'
+                                : r.lineKind === 'aux'
+                                  ? 'startup-table__pill startup-table__pill--aux'
+                                  : 'startup-table__pill startup-table__pill--norm'
                             }
                           >
                             {r.lineLabel}

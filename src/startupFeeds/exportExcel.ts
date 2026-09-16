@@ -1,7 +1,10 @@
 import ExcelJS from 'exceljs'
+import type { InspectionNote } from '../notes/types'
 import type { StartupReport } from './types'
-import { buildStartupTableRows } from './tableRows'
-
+import {
+  buildStartupTableRows,
+  collectStartupBoards,
+} from './tableRows'
 function slug(title: string): string {
   return (
     title
@@ -21,11 +24,13 @@ const COLORS = {
   summaryBg: 'E3F2FD',
   normBg: 'FAFBFC',
   altBg: 'FFF8E1',
+  auxBg: 'F3E5F5',
   destBorder: '37474F',
   lineBorder: '90A4AE',
   thinBorder: 'CFD8DC',
   muted: '546E7A',
   text: '1A2330',
+  ssbBg: 'E8F5E9',
 }
 
 function thinBorder(color = COLORS.thinBorder): Partial<ExcelJS.Borders> {
@@ -33,12 +38,147 @@ function thinBorder(color = COLORS.thinBorder): Partial<ExcelJS.Borders> {
   return { top: side, left: side, bottom: side, right: side }
 }
 
+function paintHeader(row: ExcelJS.Row): void {
+  row.height = 22
+  row.eachCell((cell) => {
+    cell.font = {
+      bold: true,
+      size: 10,
+      color: { argb: `FF${COLORS.headerFg}` },
+    }
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: `FF${COLORS.headerBg}` },
+    }
+    cell.alignment = {
+      vertical: 'middle',
+      horizontal: 'center',
+      wrapText: true,
+    }
+    cell.border = thinBorder('0D47A1')
+  })
+}
+
+function addSsbSummarySheet(
+  wb: ExcelJS.Workbook,
+  report: StartupReport,
+  notes: InspectionNote[] = [],
+): void {
+  const boards = collectStartupBoards(report, undefined, notes)
+  const nSsb = boards.filter((b) => b.kind === 'SSB').length
+  const nTrf = boards.filter((b) => b.kind === 'TRF').length
+  const ws = wb.addWorksheet('SSB y TRF', {
+    views: [{ state: 'frozen', ySplit: 3 }],
+    properties: { defaultRowHeight: 18 },
+  })
+
+  ws.columns = [
+    { header: 'Tipo', key: 'kind', width: 8 },
+    { header: 'Código (PUMA)', key: 'id', width: 20 },
+    { header: 'Nombre', key: 'name', width: 36 },
+    { header: 'Código NME', key: 'nme', width: 16 },
+    { header: 'Local', key: 'local', width: 14 },
+    { header: 'Nombre local', key: 'localName', width: 36 },
+    { header: 'Notas', key: 'notes', width: 48 },
+  ]
+  const titleRow = ws.addRow([
+    'SSB y TRF necesarios para la puesta en marcha',
+  ])
+  titleRow.height = 24
+  ws.mergeCells(1, 1, 1, 7)
+  titleRow.getCell(1).font = {
+    bold: true,
+    size: 14,
+    color: { argb: `FF${COLORS.title}` },
+  }
+  titleRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' }
+
+  const sub = ws.addRow([
+    `Informe: ${report.title || 'Alimentaciones puesta en marcha'} · ${nSsb} SSB + ${nTrf} TRF (únicos, sin repeticiones) · destinos: ${report.resolvedIds.length} · TRF: aguas abajo de LCS, excl. TRF-6PWS y TRF interiores de SSB`,
+  ])
+  ws.mergeCells(2, 1, 2, 7)
+  sub.getCell(1).font = {
+    size: 9,
+    italic: true,
+    color: { argb: `FF${COLORS.muted}` },
+  }
+
+  const header = ws.addRow([
+    'Tipo',
+    'Código (PUMA)',
+    'Nombre',
+    'Código NME',
+    'Local',
+    'Nombre local',
+    'Notas',
+  ])
+  paintHeader(header)
+
+  if (!boards.length) {
+    const empty = ws.addRow([
+      '—',
+      '—',
+      'No aparecen SSB ni TRF (LCS→…) en las cadenas de este listado',
+      '—',
+      '—',
+      '—',
+      '',
+    ])
+    empty.eachCell((cell) => {
+      cell.font = {
+        size: 9,
+        italic: true,
+        color: { argb: `FF${COLORS.muted}` },
+      }
+      cell.border = thinBorder()
+    })
+    return
+  }
+
+  for (const b of boards) {
+    const row = ws.addRow([
+      b.kind,
+      b.equipmentId,
+      b.name,
+      b.nme674Id,
+      b.local,
+      b.localName,
+      b.notes,
+    ])
+    const bg = b.kind === 'TRF' ? 'E3F2FD' : COLORS.ssbBg
+    const noteLines = b.notes ? b.notes.split('\n').length : 1
+    row.height = Math.min(18 + Math.max(0, noteLines - 1) * 12, 96)
+    row.eachCell((cell, col) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: `FF${bg}` },
+      }
+      cell.font = {
+        size: 9,
+        color: { argb: `FF${COLORS.text}` },
+        bold: col === 1 || col === 2,
+      }
+      cell.alignment = { vertical: 'top', horizontal: 'left', wrapText: col === 7 }
+      cell.border = thinBorder()
+    })
+  }
+
+  ws.autoFilter = {
+    from: { row: 3, column: 1 },
+    to: { row: 3 + Math.max(boards.length, 1), column: 7 },
+  }
+}
+
 /**
  * Excel de la tabla resumen: cadena completa por destino,
  * con colores, bordes y separación entre alimentaciones.
+ * Incluye hoja «SSB y TRF» (únicos, con NME, local, nombre local y notas).
  */
 export async function exportStartupTableExcel(
   report: StartupReport,
+  notes: InspectionNote[] = [],
 ): Promise<void> {
   const rows = buildStartupTableRows(report)
   const wb = new ExcelJS.Workbook()
@@ -77,7 +217,7 @@ export async function exportStartupTableExcel(
       (report.unresolved.length
         ? ` · No encontrados: ${report.unresolved.length}`
         : '') +
-      ' · Cada bloque muestra la cadena fuente → destino (Normal y Alternativa si existe).',
+      ' · Cada bloque muestra la cadena fuente → destino (Normal, Alternativa y AUX 24 V si existen).',
   ])
   ws.mergeCells(2, 1, 2, 8)
   sub.getCell(1).font = {
@@ -96,25 +236,7 @@ export async function exportStartupTableExcel(
     'Protección entrada',
     'Cadena completa',
   ])
-  header.height = 22
-  header.eachCell((cell) => {
-    cell.font = {
-      bold: true,
-      size: 10,
-      color: { argb: `FF${COLORS.headerFg}` },
-    }
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: `FF${COLORS.headerBg}` },
-    }
-    cell.alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-      wrapText: true,
-    }
-    cell.border = thinBorder('0D47A1')
-  })
+  paintHeader(header)
 
   for (const r of rows) {
     const excelRow = ws.addRow([
@@ -133,7 +255,9 @@ export async function exportStartupTableExcel(
         ? COLORS.summaryBg
         : r.lineKind === 'alternativa'
           ? COLORS.altBg
-          : COLORS.normBg
+          : r.lineKind === 'aux'
+            ? COLORS.auxBg
+            : COLORS.normBg
 
     excelRow.eachCell({ includeEmpty: true }, (cell, col) => {
       cell.fill = {
@@ -182,6 +306,8 @@ export async function exportStartupTableExcel(
     from: { row: 3, column: 1 },
     to: { row: 3 + rows.length, column: 8 },
   }
+
+  addSsbSummarySheet(wb, report, notes)
 
   const buf = await wb.xlsx.writeBuffer()
   const blob = new Blob([buf], {
