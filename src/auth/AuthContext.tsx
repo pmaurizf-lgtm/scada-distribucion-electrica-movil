@@ -129,10 +129,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const admitted = await admitOrReject(cred.user)
       if (admitted.status === 'forbidden') {
+        setUser(null)
         setRole('user')
         setStatus('forbidden')
         setError('Esta cuenta no está autorizada para usar la aplicación.')
+        return
       }
+      setUser(cred.user)
+      setRole(admitted.role)
+      setError(null)
+      setStatus('ready')
     } catch (err) {
       setStatus('unauthenticated')
       setError(authErrorMessage(err))
