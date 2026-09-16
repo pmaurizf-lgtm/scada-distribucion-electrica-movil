@@ -310,9 +310,11 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                 >
                   Usuario
                 </button>
-                <button type="button" className="btn" onClick={handleExportJson}>
-                  Exportar JSON
-                </button>
+                {isAdmin && (
+                  <button type="button" className="btn" onClick={handleExportJson}>
+                    Exportar JSON
+                  </button>
+                )}
                 {isAdmin && (
                   <button
                     type="button"
