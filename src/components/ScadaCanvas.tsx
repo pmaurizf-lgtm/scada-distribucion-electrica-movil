@@ -60,6 +60,7 @@ import {
   isBoardLayerVisible,
   loadEnergizationsFromExcel,
   setBoardEnergizationsEnabled,
+  setEnergizationsVessel,
   useEnergizationOverlay,
 } from '../energizations'
 
@@ -118,6 +119,11 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const { displayName, openProfilePrompt } = useUserProfile()
   const { isAdmin } = useAuth()
   const energ = useEnergizationOverlay()
+
+  useEffect(() => {
+    setEnergizationsVessel(vesselId, system690)
+  }, [vesselId])
+
   const [notesPanelOpen, setNotesPanelOpen] = useState(false)
   const [chromeCollapsed, setChromeCollapsed] = useState(false)
   const [protectionStatus, setProtectionStatus] = useState<ProtectionStatusMap>(
@@ -549,7 +555,12 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
       setSearchHint('Cargando energizaciones a bordo…')
       try {
         const buf = await file.arrayBuffer()
-        const stats = loadEnergizationsFromExcel(buf, file.name, system690)
+        const stats = loadEnergizationsFromExcel(
+          buf,
+          file.name,
+          system690,
+          vesselId,
+        )
         if (stats.unchanged) return
         if (stats.matched === 0) {
           setSearchHint(
@@ -564,7 +575,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
         )
       }
     },
-    [],
+    [vesselId],
   )
 
   const handleLocate = (e: FormEvent) => {

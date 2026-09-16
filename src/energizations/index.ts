@@ -1,10 +1,11 @@
 /**
- * Energizaciones a bordo (Excel admin).
+ * Energizaciones a bordo (Excel admin), independientes por buque.
  * Se memorizan en localStorage hasta cargar otro Excel con cambios.
  */
 import { useSyncExternalStore } from 'react'
 import { getTopology } from '../topology'
 import type { DistributionData } from '../types'
+import type { VesselId } from '../vessels/vesselCatalog'
 import { parseEnergizationsExcel } from './parseEnergizationsExcel'
 import {
   clearPersistedBoardEnergizations,
@@ -35,6 +36,7 @@ export type LoadEnergizationsResult = EnergizationImportStats & {
   unchanged: boolean
 }
 
+let activeVesselId: VesselId | null = null
 let cachedEntries: EnergizationEntry[] | null = null
 let cachedFingerprint: string | null = null
 let meta: Omit<
@@ -53,12 +55,24 @@ let cachedState: EnergizationOverlayState = { ...EMPTY_ENERGIZATION_OVERLAY }
 
 const listeners = new Set<() => void>()
 
+function emptyMeta(revision: number) {
+  return {
+    enabled: false,
+    hasData: false,
+    fileName: null as string | null,
+    notice: null as string | null,
+    stats: null as EnergizationImportStats | null,
+    revision,
+  }
+}
+
 function persistCurrent(): void {
+  if (!activeVesselId) return
   if (!cachedEntries?.length || !cachedFingerprint) {
-    clearPersistedBoardEnergizations()
+    clearPersistedBoardEnergizations(activeVesselId)
     return
   }
-  savePersistedBoardEnergizations({
+  savePersistedBoardEnergizations(activeVesselId, {
     version: 1,
     enabled: meta.enabled,
     fileName: meta.fileName,
@@ -95,8 +109,51 @@ function bumpRevision() {
   meta = { ...meta, revision: meta.revision + 1 }
 }
 
+function loadVesselIntoMemory(
+  vesselId: VesselId,
+  data: DistributionData = getTopology(),
+): void {
+  const stored = loadPersistedBoardEnergizations(vesselId)
+  activeVesselId = vesselId
+  if (!stored?.entries.length) {
+    cachedEntries = null
+    cachedFingerprint = null
+    meta = emptyMeta(meta.revision + 1)
+    cachedState = { ...EMPTY_ENERGIZATION_OVERLAY, revision: meta.revision }
+    return
+  }
+  cachedEntries = stored.entries
+  cachedFingerprint = stored.fingerprint
+  meta = {
+    enabled: stored.enabled,
+    hasData: true,
+    fileName: stored.fileName,
+    notice: null,
+    stats: null,
+    revision: meta.revision + 1,
+  }
+  applyResolve(data, null)
+}
+
+/**
+ * Activa el contexto de energizaciones del buque (carga su Excel memorizado).
+ * Llamar al montar el unifilar o al cambiar de buque.
+ */
+export function setEnergizationsVessel(
+  vesselId: VesselId,
+  data: DistributionData = getTopology(),
+): void {
+  if (activeVesselId === vesselId) return
+  loadVesselIntoMemory(vesselId, data)
+  emit()
+}
+
 export function getEnergizationOverlay(): EnergizationOverlayState {
   return cachedState
+}
+
+export function getEnergizationsVesselId(): VesselId | null {
+  return activeVesselId
 }
 
 export function subscribeEnergization(listener: () => void): () => void {
@@ -116,7 +173,15 @@ export function loadEnergizationsFromExcel(
   buffer: ArrayBuffer,
   fileName: string,
   data: DistributionData = getTopology(),
+  vesselId?: VesselId,
 ): LoadEnergizationsResult {
+  if (vesselId && activeVesselId !== vesselId) {
+    loadVesselIntoMemory(vesselId, data)
+  }
+  if (!activeVesselId) {
+    throw new Error('No hay buque activo para energizaciones.')
+  }
+
   const entries = parseEnergizationsExcel(buffer)
   const fingerprint = energizationEntriesFingerprint(entries)
   const unchanged =
@@ -129,7 +194,7 @@ export function loadEnergizationsFromExcel(
       ...meta,
       enabled: true,
       fileName,
-      notice: `Excel «${fileName}» sin cambios respecto al memorizado (${entries.length} filas). Capa activa.`,
+      notice: `Excel «${fileName}» sin cambios respecto al memorizado de ${activeVesselId} (${entries.length} filas). Capa activa.`,
     }
     bumpRevision()
     applyResolve(data, meta.notice)
@@ -157,7 +222,7 @@ export function loadEnergizationsFromExcel(
   }
   bumpRevision()
   applyResolve(data, null)
-  const notice = `Energizaciones «${fileName}» memorizadas: ${cachedState.stats?.energized ?? 0} cables SI · ${cachedState.stats?.dead ?? 0} NO · ${cachedState.stats?.matched ?? 0} cruzados con el unifilar (${cachedState.stats?.skippedUnknown ?? 0} sin match).`
+  const notice = `Energizaciones «${fileName}» memorizadas (${activeVesselId}): ${cachedState.stats?.energized ?? 0} cables SI · ${cachedState.stats?.dead ?? 0} NO · ${cachedState.stats?.matched ?? 0} cruzados con el unifilar (${cachedState.stats?.skippedUnknown ?? 0} sin match).`
   meta = { ...meta, notice }
   cachedState = { ...cachedState, notice }
   persistCurrent()
@@ -185,11 +250,11 @@ export function refreshEnergizationsForTopology(
 }
 
 export function setBoardEnergizationsEnabled(enabled: boolean): void {
-  if (!cachedEntries?.length) return
+  if (!cachedEntries?.length || !activeVesselId) return
   if (meta.enabled === enabled) return
   const notice = enabled
-    ? `Capa de energizaciones activada (${meta.fileName ?? 'memorizado'}).`
-    : 'Capa de energizaciones desactivada (datos memorizados).'
+    ? `Capa de energizaciones activada (${activeVesselId} · ${meta.fileName ?? 'memorizado'}).`
+    : `Capa de energizaciones desactivada (${activeVesselId}; datos memorizados).`
   meta = { ...meta, enabled, notice }
   bumpRevision()
   applyResolve(getTopology(), notice)
@@ -200,16 +265,9 @@ export function setBoardEnergizationsEnabled(enabled: boolean): void {
 export function clearEnergizations(): void {
   cachedEntries = null
   cachedFingerprint = null
-  meta = {
-    enabled: false,
-    hasData: false,
-    fileName: null,
-    notice: null,
-    stats: null,
-    revision: meta.revision + 1,
-  }
+  meta = emptyMeta(meta.revision + 1)
   cachedState = { ...EMPTY_ENERGIZATION_OVERLAY, revision: meta.revision }
-  clearPersistedBoardEnergizations()
+  if (activeVesselId) clearPersistedBoardEnergizations(activeVesselId)
   emit()
 }
 
@@ -219,21 +277,3 @@ export function clearEnergizationNotice(): void {
   cachedState = { ...cachedState, notice: null }
   emit()
 }
-
-function initFromStorage(): void {
-  const stored = loadPersistedBoardEnergizations()
-  if (!stored?.entries.length) return
-  cachedEntries = stored.entries
-  cachedFingerprint = stored.fingerprint
-  meta = {
-    enabled: stored.enabled,
-    hasData: true,
-    fileName: stored.fileName,
-    notice: null,
-    stats: null,
-    revision: 0,
-  }
-  applyResolve(getTopology(), null)
-}
-
-initFromStorage()
