@@ -705,6 +705,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                     }
                   >
                     Usuario
+                    {isAdmin ? ' · Admin' : ''}
                   </button>
                 </div>
                 <div

@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, getDocFromServer } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
 import { getFirebase } from '../firebase/app'
 
@@ -28,6 +28,22 @@ function parseRole(raw: unknown): AppRole {
   return 'user'
 }
 
+async function readAllowlistDoc(email: string) {
+  const fb = getFirebase()
+  if (!fb) return null
+  const ref = doc(fb.db, 'allowlist', email)
+  try {
+    // Evita caché persistente obsoleta (p. ej. allowlist creada después).
+    return await getDocFromServer(ref)
+  } catch {
+    try {
+      return await getDoc(ref)
+    } catch {
+      return null
+    }
+  }
+}
+
 /**
  * Solo cuentas de correo/contraseña creadas por el administrador.
  * Acceso permitido si:
@@ -42,15 +58,8 @@ export async function isUserAllowed(user: User): Promise<boolean> {
   const envList = parseAllowedEmails(import.meta.env.VITE_ALLOWED_EMAILS)
   if (envList.includes(normalized)) return true
 
-  const fb = getFirebase()
-  if (fb) {
-    try {
-      const snap = await getDoc(doc(fb.db, 'allowlist', normalized))
-      if (snap.exists() && snap.data()?.enabled !== false) return true
-    } catch {
-      /* sin permiso o sin red: no abrir por Firestore */
-    }
-  }
+  const snap = await readAllowlistDoc(normalized)
+  if (snap?.exists() && snap.data()?.enabled !== false) return true
 
   if (envList.length === 0) return true
   return false
@@ -69,18 +78,11 @@ export async function resolveUserRole(user: User): Promise<AppRole> {
   const envAdmins = parseAllowedEmails(import.meta.env.VITE_ADMIN_EMAILS)
   if (envAdmins.includes(normalized)) return 'admin'
 
-  const fb = getFirebase()
-  if (fb) {
-    try {
-      const snap = await getDoc(doc(fb.db, 'allowlist', normalized))
-      if (snap.exists()) {
-        const data = snap.data() as { enabled?: boolean; role?: unknown }
-        if (data.enabled === false) return 'user'
-        return parseRole(data.role)
-      }
-    } catch {
-      /* ignore */
-    }
+  const snap = await readAllowlistDoc(normalized)
+  if (snap?.exists()) {
+    const data = snap.data() as { enabled?: boolean; role?: unknown }
+    if (data.enabled === false) return 'user'
+    return parseRole(data.role)
   }
 
   return 'user'
