@@ -3,7 +3,6 @@ import {
   incomingFeeds,
   isAux24Feed,
   isPendingFeed,
-  msb24SourceForAuxOrigin,
 } from '../utils/cascadeModel'
 import { filterUpstreamIncoming } from '../utils/upstream'
 
@@ -16,13 +15,19 @@ export interface FeedChainHop {
   /** Protección que alimenta este equipo desde el escalón anterior (`—` en la fuente). */
   protectionName: string
   circuitId?: string
-  lineType?: 'normal' | 'alternativa'
+  lineType?: 'normal' | 'alternativa' | 'aux'
 }
 
-export type FeedLineKind = 'normal' | 'alternativa'
+export type FeedLineKind = 'normal' | 'alternativa' | 'aux'
 
 function eqMap(data: DistributionData): Map<string, Equipment> {
   return new Map(data.equipment.map((e) => [e.id, e]))
+}
+
+function hopLineType(feed: Circuit): FeedChainHop['lineType'] {
+  if (isAux24Feed(feed)) return 'aux'
+  if (feed.lineType === 'alternativa' || isPendingFeed(feed)) return 'alternativa'
+  return 'normal'
 }
 
 function pickFeed(
@@ -32,24 +37,32 @@ function pickFeed(
   const real = feeds.filter((c) => !c.virtual)
   if (!real.length) return undefined
 
+  if (prefer === 'aux') {
+    return real.find((c) => isAux24Feed(c))
+  }
+
+  // Potencia: no mezclar AUX 24 V con Normal / Alternativa.
+  const power = real.filter((c) => !isAux24Feed(c))
+  if (!power.length) return undefined
+
   if (prefer === 'alternativa') {
     return (
-      real.find((c) => c.lineType === 'alternativa') ??
-      real.find((c) => isPendingFeed(c))
+      power.find((c) => c.lineType === 'alternativa') ??
+      power.find((c) => isPendingFeed(c))
     )
   }
 
-  const norms = real.filter(
+  const norms = power.filter(
     (c) => c.lineType === 'normal' && !isPendingFeed(c),
   )
   if (norms.length) return norms[0]
-  return real.find((c) => !isPendingFeed(c)) ?? real[0]
+  return power.find((c) => !isPendingFeed(c)) ?? power[0]
 }
 
 /**
- * Cadena ordenada fuente → destino siguiendo preferencia NORM o ALT
+ * Cadena ordenada fuente → destino siguiendo preferencia NORM, ALT o AUX
  * en el primer salto; el resto aguas arriba prioriza alimentación normal.
- * Si se pide ALT y el destino no tiene acometida alternativa, devuelve [].
+ * Si se pide ALT/AUX y el destino no tiene esa acometida, devuelve [].
  */
 export function buildOrderedFeedChain(
   destinationId: string,
@@ -76,7 +89,12 @@ export function buildOrderedFeedChain(
 
     const feed = pickFeed(incoming, prefer)
     if (!feed) {
-      if (atTarget && linePreference === 'alternativa') return []
+      if (
+        atTarget &&
+        (linePreference === 'alternativa' || linePreference === 'aux')
+      ) {
+        return []
+      }
       break
     }
     if (atTarget && linePreference === 'alternativa') {
@@ -84,13 +102,15 @@ export function buildOrderedFeedChain(
         feed.lineType === 'alternativa' || isPendingFeed(feed)
       if (!isAlt) return []
     }
+    if (atTarget && linePreference === 'aux' && !isAux24Feed(feed)) {
+      return []
+    }
 
     chainUp[chainUp.length - 1]!.fedBy = feed
 
-    let nextId = feed.originId
-    if (isAux24Feed(feed)) {
-      nextId = msb24SourceForAuxOrigin(data, feed.originId)
-    }
+    // Seguir el origen real (p. ej. SSB-24PWxxxx), no saltar al MSB-24:
+    // el informe debe mostrar la acometida AUX completa.
+    const nextId = feed.originId
     if (seen.has(nextId)) break
     seen.add(nextId)
 
@@ -111,12 +131,7 @@ export function buildOrderedFeedChain(
       local: eq?.local,
       protectionName: fedBy?.protectionName?.trim() || '—',
       circuitId: fedBy?.id,
-      lineType:
-        fedBy == null
-          ? undefined
-          : fedBy.lineType === 'alternativa' || isPendingFeed(fedBy)
-            ? 'alternativa'
-            : 'normal',
+      lineType: fedBy == null ? undefined : hopLineType(fedBy),
     }
   })
 }
@@ -134,4 +149,10 @@ export function formatChainArrow(hops: FeedChainHop[]): string {
       return `${prot}${h.equipmentId}${loc}`
     })
     .join('')
+}
+
+export function feedLineLabel(kind: FeedLineKind): string {
+  if (kind === 'alternativa') return 'Alternativa'
+  if (kind === 'aux') return 'AUX 24 V'
+  return 'Normal'
 }

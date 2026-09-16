@@ -247,11 +247,12 @@ export function formatNotesForStartupBoard(
       if (note.target.kind === 'equipment') {
         return formatNoteBlock(note)
       }
-      const c = data.circuits.find((x) => x.id === note.target.circuitId)
+      const circuitId = note.target.circuitId
+      const c = data.circuits.find((x) => x.id === circuitId)
       const label =
         c?.protectionName?.trim() ||
         c?.circuitRef?.trim() ||
-        note.target.circuitId
+        circuitId
       return formatNoteBlock(note, label)
     })
     .filter(Boolean)
