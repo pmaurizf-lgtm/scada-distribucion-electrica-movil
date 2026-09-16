@@ -1,4 +1,5 @@
 import type { DistributionData } from '../types'
+import { isAux24Feed } from '../utils/cascadeModel'
 import type { EnergizationEntry, EnergizationImportStats } from './types'
 
 function normCode(raw: string): string {
@@ -35,10 +36,13 @@ export function resolveEnergizations(
       energizedCircuitIds.add(circuitId)
       deadCircuitIds.delete(circuitId)
       energized++
+      const circuit = data.circuits.find((c) => c.id === circuitId)
+      // AUX 24 V: el cable puede estar SI, pero no marca el equipo como energizado
+      // (solo NORM / ALT de potencia resaltan el chasis).
+      if (circuit && isAux24Feed(circuit)) continue
       if (entry.destinationId) {
         energizedEquipmentIds.add(entry.destinationId.trim())
       }
-      const circuit = data.circuits.find((c) => c.id === circuitId)
       if (circuit?.destinationId) {
         energizedEquipmentIds.add(circuit.destinationId)
       }
