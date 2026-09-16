@@ -40,6 +40,11 @@ import {
 import { EquipmentBalloon } from './EquipmentBalloon'
 import { isSsb2Pws2209 } from '../abtDownstream/ssb2pws2209'
 import { isOutletSideOriginLive } from '../abtDownstream/ssbBoard'
+import {
+  eqBoardClass,
+  legBoardClass,
+  useEnergizationOverlay,
+} from '../energizations'
 
 export type EquipFam = 'abt' | 'trf' | 'lcs' | 'sec' | 'eq'
 
@@ -316,8 +321,10 @@ export function EquipmentBusDrop({
     remoteFeeds.length > 0 ||
     (qvsLegs != null && qvsLegs.length > 1) ||
     parallelLegs.length > 0
+  const boardOverlay = useEnergizationOverlay()
   const localFlowing = energizedCircuitIds.has(localFeed.id)
   const eqEnergized = energizedEquipmentIds.has(equipment.id)
+  const eqBoardLiveClass = eqBoardClass(equipment.id, boardOverlay)
   const isAltLocal = localFeed.lineType === 'alternativa'
   /** SSB abierto bajo otro cuadro: chasis dedicado (no cajita + board suelto). */
   const ssbChassisOpen =
@@ -361,6 +368,8 @@ export function EquipmentBusDrop({
   const renderLeg = (feed: Circuit, kind: 'local' | 'remote') => {
     const isAlt = feed.lineType === 'alternativa'
     const flowing = energizedCircuitIds.has(feed.id)
+    const boardLeg = legBoardClass(feed.id, boardOverlay)
+    const boardActive = boardLeg.includes('board-live') || boardLeg.includes('board-dead')
     const pending = isPendingFeed(feed)
     const breakerOpen = protectionStatus[feed.id] !== 'cerrada'
     const originLive =
@@ -374,7 +383,7 @@ export function EquipmentBusDrop({
     return (
       <div
         key={feed.id}
-        className={`hbus-drop__leg hbus-drop__leg--${kind}${isAlt ? ' hbus-drop__leg--alt' : ' hbus-drop__leg--norm'}${flowing ? ' hbus-drop__leg--flow' : ''}${breakerOpen && !flowing ? ' hbus-drop__leg--open' : ''}${originLive && !flowing ? ' hbus-drop__leg--from-live' : ''}`}
+        className={`hbus-drop__leg hbus-drop__leg--${kind}${isAlt ? ' hbus-drop__leg--alt' : ' hbus-drop__leg--norm'}${flowing && !boardActive ? ' hbus-drop__leg--flow' : ''}${boardLeg}${breakerOpen && !flowing && !boardActive ? ' hbus-drop__leg--open' : ''}${originLive && !flowing && !boardActive ? ' hbus-drop__leg--from-live' : ''}`}
         {...dataFlowVoltageFromCircuit(feed)}
         data-circuit-id={kind === 'local' ? feed.id : undefined}
         data-remote-circuit={kind === 'remote' ? feed.id : undefined}
@@ -457,7 +466,7 @@ export function EquipmentBusDrop({
 
   return (
     <div
-      className={`hbus-drop hbus-drop--fam-${equipFam}${isAltLocal ? ' hbus-drop--alt' : ''}${localFlowing ? ' hbus-drop--flow' : ''}${eqEnergized ? ' hbus-drop--live' : ''}${dual || hasAuxTops ? ' hbus-drop--dual' : ''}${canExpand ? ' hbus-drop--expandable' : ''}${spare ? ' hbus-drop--spare' : ''}${linkOnlyFromParent ? ' hbus-drop--link-only' : ''}${located ? ' hbus-drop--locate' : ''}${is2209 && ssbChassisOpen ? ' hbus-drop--ssb2209' : ''}${rootClassName ? ` ${rootClassName}` : ''}`}
+      className={`hbus-drop hbus-drop--fam-${equipFam}${isAltLocal ? ' hbus-drop--alt' : ''}${localFlowing && !legBoardClass(localFeed.id, boardOverlay) ? ' hbus-drop--flow' : ''}${eqEnergized ? ' hbus-drop--live' : ''}${eqBoardLiveClass}${dual || hasAuxTops ? ' hbus-drop--dual' : ''}${canExpand ? ' hbus-drop--expandable' : ''}${spare ? ' hbus-drop--spare' : ''}${linkOnlyFromParent ? ' hbus-drop--link-only' : ''}${located ? ' hbus-drop--locate' : ''}${is2209 && ssbChassisOpen ? ' hbus-drop--ssb2209' : ''}${rootClassName ? ` ${rootClassName}` : ''}`}
       {...rootVoltageProps}
       data-equip={equipment.id}
       data-locate={located ? '1' : undefined}
@@ -533,7 +542,7 @@ export function EquipmentBusDrop({
       {ssbChassisOpen ? (
         <div className="hbus-drop__eq-row">
           <div
-            className={`equip-chassis equip-chassis--ssb${eqEnergized ? ' equip-chassis--live' : ''}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
+            className={`equip-chassis equip-chassis--ssb${eqEnergized ? ' equip-chassis--live' : ''}${eqBoardLiveClass}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
             {...dataFlowVoltageProps(equipment.id)}
             onDoubleClick={toggleExpand}
             aria-label={`${equipment.id} · doble clic para plegar`}
@@ -584,7 +593,7 @@ export function EquipmentBusDrop({
             >
               <button
                 type="button"
-                className={`hbus-drop__eq hbus-drop__eq--fam-${equipFam}${expanded ? ' hbus-drop__eq--open' : ''}${eqEnergized ? ' hbus-drop__eq--live' : ''}${spare ? ' hbus-drop__eq--spare' : ''}`}
+                className={`hbus-drop__eq hbus-drop__eq--fam-${equipFam}${expanded ? ' hbus-drop__eq--open' : ''}${eqEnergized ? ' hbus-drop__eq--live' : ''}${eqBoardLiveClass}${spare ? ' hbus-drop__eq--spare' : ''}`}
                 data-equip={equipment.id}
                 aria-disabled={!canExpand}
                 aria-label={

@@ -10,6 +10,10 @@ import { isMotorizedProtectionModel } from '../abtDownstream/ssbBoard'
 import { useCircuitLockInfo } from '../locks/LockInfoContext'
 import { yieldEquipBalloonToBreaker } from '../hooks/useEquipInfoBalloon'
 import {
+  boardBreakerFlags,
+  useEnergizationOverlay,
+} from '../energizations'
+import {
   LockBadge,
   ManualBreakerSymbol,
   MotorizedBreakerSymbol,
@@ -53,6 +57,8 @@ export function BreakerChip({
   /** Clic en el símbolo de candado → globo con nº LOTO. */
   onLockInfo?: (info: CircuitLockInfo, rect: DOMRect) => void
 }) {
+  const boardOverlay = useEnergizationOverlay()
+  const { boardLive, boardDead } = boardBreakerFlags(circuitId, boardOverlay)
   const lockCtx = useCircuitLockInfo()
   const resolvedLockInfo =
     lockInfo ??
@@ -97,7 +103,7 @@ export function BreakerChip({
   return (
     <button
       type="button"
-      className={`casc-brk${state ? ` casc-brk--${state}` : ''}${compact ? ' casc-brk--compact' : ''}${flowing ? ' casc-brk--flow' : ''}${locked ? ' casc-brk--locked' : ''}${orientation === 'horizontal' ? ' casc-brk--horizontal' : ''}${isMotor ? '' : ' casc-brk--manual'}`}
+      className={`casc-brk${state ? ` casc-brk--${state}` : ''}${compact ? ' casc-brk--compact' : ''}${flowing && !boardLive && !boardDead ? ' casc-brk--flow' : ''}${boardLive ? ' casc-brk--board-live' : ''}${boardDead ? ' casc-brk--board-dead' : ''}${locked ? ' casc-brk--locked' : ''}${orientation === 'horizontal' ? ' casc-brk--horizontal' : ''}${isMotor ? '' : ' casc-brk--manual'}`}
       onClick={onClick}
       title={nativeTitle}
       aria-label={aria}
@@ -143,6 +149,11 @@ export function BreakerChip({
           />
         )}
       </span>
+      {boardLive && (
+        <span className="casc-brk__board-bolt" aria-hidden title="Energizado a bordo">
+          ⚡
+        </span>
+      )}
       {locked && (
         <span
           className={`casc-brk__lock-hit${resolvedLockInfo && resolvedOnLockInfo ? ' casc-brk__lock-hit--clickable' : ''}`}

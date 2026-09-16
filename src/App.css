@@ -3025,6 +3025,90 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   animation: brk-flow-pulse 1.8s ease-in-out infinite;
 }
 
+/* Capa «energizaciones a bordo» (Excel admin) */
+.hbus-drop__leg--board-dead[data-flow-v] .hbus-drop__wire,
+.hbus-drop__leg--board-dead[data-flow-v] .hbus-drop__free-end {
+  background: color-mix(in srgb, var(--flow-wire) 22%, #4a5258) !important;
+  opacity: 0.65;
+  box-shadow: none;
+  animation: none;
+}
+
+.hbus-drop__leg--board-live[data-flow-v] .hbus-drop__wire,
+.hbus-drop__leg--board-live[data-flow-v] .hbus-drop__free-end {
+  background: var(--flow-wire) !important;
+  opacity: 1;
+  box-shadow:
+    0 0 6px color-mix(in srgb, var(--flow-wire) 75%, white),
+    0 0 14px color-mix(in srgb, var(--flow-wire) 45%, transparent);
+  animation: board-wire-pulse 2.2s ease-in-out infinite;
+}
+
+.hbus-drop__leg--board-dead:not([data-flow-v]) .hbus-drop__wire,
+.hbus-drop__leg--board-dead:not([data-flow-v]) .hbus-drop__free-end {
+  background: color-mix(in srgb, var(--wire-idle) 55%, #4a5258) !important;
+  opacity: 0.55;
+}
+
+.hbus-drop__leg--board-live:not([data-flow-v]) .hbus-drop__wire,
+.hbus-drop__leg--board-live:not([data-flow-v]) .hbus-drop__free-end {
+  filter: saturate(1.35) brightness(1.15);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--line-normal) 50%, transparent);
+}
+
+@keyframes board-wire-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.2);
+  }
+}
+
+.casc-brk--board-dead {
+  border-color: rgba(107, 122, 114, 0.45);
+}
+
+.casc-brk--board-dead .casc-brk__iec line,
+.casc-brk--board-dead .casc-brk__iec rect,
+.casc-brk--board-dead .casc-brk__iec circle {
+  stroke: #6b7a72 !important;
+}
+
+.casc-brk--board-live {
+  border-color: rgba(34, 197, 94, 0.85);
+  box-shadow:
+    0 0 0 1px rgba(34, 197, 94, 0.45),
+    0 0 12px rgba(34, 197, 94, 0.35);
+}
+
+.casc-brk--board-live .casc-brk__iec line,
+.casc-brk--board-live .casc-brk__iec rect,
+.casc-brk--board-live .casc-brk__iec circle {
+  stroke: #22c55e !important;
+}
+
+.casc-brk__board-bolt {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: #fde047;
+  text-shadow: 0 0 6px rgba(253, 224, 71, 0.85);
+  pointer-events: none;
+}
+
+.hbus-drop__eq--board-live,
+.equip-chassis--board-live {
+  outline: 2px solid color-mix(in srgb, var(--flow-wire, #e6c200) 75%, white);
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--flow-wire, #e6c200) 35%, transparent),
+    0 0 14px color-mix(in srgb, var(--flow-wire, #e6c200) 40%, transparent);
+}
+
 .casc-brk--flash {
   animation: brk-flash 0.8s ease 2;
 }
