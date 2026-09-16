@@ -466,7 +466,7 @@ export function EquipmentBusDrop({
 
   return (
     <div
-      className={`hbus-drop hbus-drop--fam-${equipFam}${isAltLocal ? ' hbus-drop--alt' : ''}${localFlowing && !legBoardClass(localFeed.id, boardOverlay) ? ' hbus-drop--flow' : ''}${eqEnergized ? ' hbus-drop--live' : ''}${eqBoardLiveClass}${dual || hasAuxTops ? ' hbus-drop--dual' : ''}${canExpand ? ' hbus-drop--expandable' : ''}${spare ? ' hbus-drop--spare' : ''}${linkOnlyFromParent ? ' hbus-drop--link-only' : ''}${located ? ' hbus-drop--locate' : ''}${is2209 && ssbChassisOpen ? ' hbus-drop--ssb2209' : ''}${rootClassName ? ` ${rootClassName}` : ''}`}
+      className={`hbus-drop hbus-drop--fam-${equipFam}${isAltLocal ? ' hbus-drop--alt' : ''}${localFlowing && !legBoardClass(localFeed.id, boardOverlay) ? ' hbus-drop--flow' : ''}${eqEnergized ? ' hbus-drop--live' : ''}${dual || hasAuxTops ? ' hbus-drop--dual' : ''}${canExpand ? ' hbus-drop--expandable' : ''}${spare ? ' hbus-drop--spare' : ''}${linkOnlyFromParent ? ' hbus-drop--link-only' : ''}${located ? ' hbus-drop--locate' : ''}${is2209 && ssbChassisOpen ? ' hbus-drop--ssb2209' : ''}${rootClassName ? ` ${rootClassName}` : ''}`}
       {...rootVoltageProps}
       data-equip={equipment.id}
       data-locate={located ? '1' : undefined}
