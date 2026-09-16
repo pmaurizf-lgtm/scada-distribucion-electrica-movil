@@ -7,7 +7,9 @@ export type PersistedBoardEnergizations = {
   version: 1
   enabled: boolean
   fileName: string | null
+  /** Huella del Excel completo (todas las filas leídas). */
   fingerprint: string
+  /** Solo filas que cruzan con circuitRef del unifilar (compacto). */
   entries: EnergizationEntry[]
 }
 
@@ -53,22 +55,24 @@ export function loadPersistedBoardEnergizations(
 
     const legacy = parseStored(localStorage.getItem(LEGACY_STORAGE_KEY))
     if (!legacy?.entries.length) return null
-    savePersistedBoardEnergizations(vesselId, legacy)
-    localStorage.removeItem(LEGACY_STORAGE_KEY)
+    const ok = savePersistedBoardEnergizations(vesselId, legacy)
+    if (ok) localStorage.removeItem(LEGACY_STORAGE_KEY)
     return legacy
   } catch {
     return null
   }
 }
 
+/** @returns false si no se pudo escribir (p. ej. cuota localStorage). */
 export function savePersistedBoardEnergizations(
   vesselId: VesselId,
   data: PersistedBoardEnergizations,
-): void {
+): boolean {
   try {
     localStorage.setItem(storageKey(vesselId), JSON.stringify(data))
+    return true
   } catch {
-    /* quota / modo privado */
+    return false
   }
 }
 
