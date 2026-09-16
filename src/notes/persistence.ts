@@ -1,5 +1,4 @@
 import type { VesselId } from '../vessels/vesselCatalog'
-import { getFirebase, isSignedInUser } from '../firebase/app'
 import {
   coerceNoteLines,
   isNoteDeleted,
@@ -171,7 +170,7 @@ export function notesForTarget(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
-/** Nº de viñetas abiertas en el destino (badge del globo). */
+/** Nº de líneas abiertas en el destino (badge del globo). */
 export function countOpenNotesForTarget(
   notes: InspectionNote[],
   target: NoteTarget,
@@ -194,23 +193,13 @@ export function isNoteAuthor(
   userId: string,
   displayName?: string,
 ): boolean {
-  if (userId && note.authorId && note.authorId === userId) return true
-  // Mismo nombre de perfil: tras borrar datos del sitio el install-id cambia,
-  // pero el autor visible sigue siendo el mismo.
-  if (
-    displayName &&
-    note.author.trim().toLowerCase() === displayName.trim().toLowerCase()
-  ) {
-    return true
-  }
-  return false
+  if (note.authorId) return note.authorId === userId
+  // Notas antiguas sin authorId: el nombre visible es el único rastro.
+  return Boolean(displayName) && note.author === displayName
 }
 
 export function currentAuthor(): { author: string; authorId: string } | null {
   const profile = loadUserProfile()
   if (!profile) return null
-  // Preferir UID de Firebase (estable entre equipos) frente al id de instalación.
-  const user = getFirebase()?.auth.currentUser ?? null
-  const authorId = isSignedInUser(user) ? user.uid : getInstallUserId()
-  return { author: profile.displayName, authorId }
+  return { author: profile.displayName, authorId: getInstallUserId() }
 }

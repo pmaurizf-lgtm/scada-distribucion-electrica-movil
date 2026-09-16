@@ -86,7 +86,7 @@ export function NoteEditorModal() {
         ? activeNote.lines.map((l) => ({ ...l }))
         : [emptyLine()],
     )
-    // Solo al cambiar de nota / sesión; no al marcar una viñeta (evita pisar texto).
+    // Solo al cambiar de nota / sesión; no al marcar una línea (evita pisar texto).
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [
     editor?.createNew,
@@ -264,7 +264,7 @@ export function NoteEditorModal() {
                             ? 'Todas resueltas'
                             : `${open} abierta${open === 1 ? '' : 's'}`}
                           {' · '}
-                          {n.lines.length} viñeta
+                          {n.lines.length} línea
                           {n.lines.length === 1 ? '' : 's'}
                         </span>
                       </button>
@@ -297,14 +297,14 @@ export function NoteEditorModal() {
                   ? ` · ${openLineCount(activeNote)} abierta(s)`
                   : ' · todas resueltas'}
                 {!ownsActive
-                  ? ' · Solo el autor puede editar o borrar; tú puedes marcar viñetas.'
+                  ? ' · Solo el autor puede editar o borrar; tú puedes marcar líneas.'
                   : ''}
               </p>
             )}
           </div>
 
           <p className="notes-modal__label">
-            Viñetas (marca cada una al resolverla)
+            Líneas (marca cada una al resolverla)
           </p>
           <ul className="note-editor__lines">
             {draftLines.map((line, index) => (
@@ -320,7 +320,7 @@ export function NoteEditorModal() {
                     type="checkbox"
                     checked={line.resolved}
                     onChange={(e) => toggleLine(line.id, e.target.checked)}
-                    aria-label="Marcar viñeta como resuelta"
+                    aria-label="Marcar línea como resuelta"
                   />
                 </label>
                 <span className="note-editor__bullet" aria-hidden>
@@ -330,7 +330,7 @@ export function NoteEditorModal() {
                   type="text"
                   className="note-editor__line-input"
                   value={line.text}
-                  placeholder="Texto de la viñeta…"
+                  placeholder="Texto de la línea…"
                   enterKeyHint="next"
                   autoComplete="off"
                   autoCorrect="on"
@@ -342,8 +342,8 @@ export function NoteEditorModal() {
                 <button
                   type="button"
                   className="note-editor__line-remove"
-                  title="Quitar viñeta"
-                  aria-label="Quitar viñeta"
+                  title="Quitar línea"
+                  aria-label="Quitar línea"
                   onClick={() => removeLine(line.id)}
                 >
                   ×
@@ -355,7 +355,7 @@ export function NoteEditorModal() {
           <div className="note-editor__add-row">
             {(!activeNote || draftMode || ownsActive) && (
               <button type="button" className="btn" onClick={addLine}>
-                + Viñeta
+                + Línea
               </button>
             )}
             {isMobile && targetNotes.length === 0 && (
@@ -374,15 +374,10 @@ export function NoteEditorModal() {
               onClick={() => {
                 if (
                   window.confirm(
-                    '¿Eliminar esta nota de revisión? Desaparecerá en todos los móviles al sincronizar.',
+                    '¿Eliminar esta nota de revisión? Desaparecerá en todos los equipos al sincronizar.',
                   )
                 ) {
-                  if (!deleteNote(activeNote.id)) {
-                    window.alert(
-                      'No se pudo eliminar: solo el autor de la nota puede borrarla (mismo perfil).',
-                    )
-                    return
-                  }
+                  if (!deleteNote(activeNote.id)) return
                   if (targetNotes.length <= 1) closeEditor()
                   else openEditor({ target: editor.target, createNew: true })
                 }

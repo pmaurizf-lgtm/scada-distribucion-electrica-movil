@@ -220,12 +220,17 @@ function parseBackupSheet(
   return [...byId.values()].map((n) => ({ ...n, vesselId }))
 }
 
-function parseViñetasSheet(
+function parseLineasSheet(
   ws: ExcelJS.Worksheet,
   vesselId: VesselId,
 ): InspectionNote[] {
-  const header = findHeaderRow(ws, ['id', 'viñeta', 'autor'])
+  const header =
+    findHeaderRow(ws, ['id', 'línea', 'autor']) ??
+    findHeaderRow(ws, ['id', 'viñeta', 'autor'])
   if (!header) return []
+  const textCol =
+    header.col.get('línea') ?? header.col.get('viñeta')
+  if (textCol == null) return []
   type Acc = {
     key: string
     target: NoteTarget
@@ -238,7 +243,7 @@ function parseViñetasSheet(
   for (let r = header.row + 1; r <= ws.rowCount; r++) {
     const row = ws.getRow(r)
     const id = cellText(row.getCell(header.col.get('id')!)).trim()
-    const text = cellText(row.getCell(header.col.get('viñeta')!)).trim()
+    const text = cellText(row.getCell(textCol)).trim()
     if (!id || !text) continue
     const kind = cellText(row.getCell(header.col.get('tipo') ?? 0))
     const target = targetFromRow(kind, id)
@@ -292,13 +297,18 @@ function parseNotasSheet(
   ws: ExcelJS.Worksheet,
   vesselId: VesselId,
 ): InspectionNote[] {
-  const header = findHeaderRow(ws, ['id', 'viñetas', 'autor'])
+  const header =
+    findHeaderRow(ws, ['id', 'líneas', 'autor']) ??
+    findHeaderRow(ws, ['id', 'viñetas', 'autor'])
   if (!header) return []
+  const packedCol =
+    header.col.get('líneas') ?? header.col.get('viñetas')
+  if (packedCol == null) return []
   const out: InspectionNote[] = []
   for (let r = header.row + 1; r <= ws.rowCount; r++) {
     const row = ws.getRow(r)
     const id = cellText(row.getCell(header.col.get('id')!)).trim()
-    const packed = cellText(row.getCell(header.col.get('viñetas')!))
+    const packed = cellText(row.getCell(packedCol))
     if (!id) continue
     const lines = parsePackedBullets(packed)
     if (lines.length === 0) continue
@@ -333,11 +343,12 @@ export async function parseNotesExcel(
     const notes = parseBackupSheet(backup, vesselId)
     if (notes.length > 0) return { notes, source: 'backup' }
   }
-  const vineta = wb.worksheets.find(
-    (s) => s.name.trim().toLowerCase() === 'viñetas',
-  )
-  if (vineta) {
-    const notes = parseViñetasSheet(vineta, vesselId)
+  const lineas = wb.worksheets.find((s) => {
+    const name = s.name.trim().toLowerCase()
+    return name === 'líneas' || name === 'lineas' || name === 'viñetas'
+  })
+  if (lineas) {
+    const notes = parseLineasSheet(lineas, vesselId)
     if (notes.length > 0) return { notes, source: 'report' }
   }
   const notas = wb.worksheets.find(
@@ -348,7 +359,7 @@ export async function parseNotesExcel(
     if (notes.length > 0) return { notes, source: 'report' }
   }
   throw new Error(
-    'El Excel no parece un informe de notas (faltan las hojas Notas / Viñetas).',
+    'El Excel no parece un informe de notas (faltan las hojas Notas / Líneas).',
   )
 }
 

@@ -13,7 +13,6 @@ import {
 import { vesselById } from '../vessels/vesselCatalog'
 import { useUserProfile } from '../notes/UserProfileContext'
 import { useIsMobileUi } from '../hooks/useIsMobileUi'
-import { forceRefreshApp } from '../registerPwa'
 import { useAuth } from '../auth'
 
 type Filter = 'open' | 'resolved' | 'all'
@@ -38,7 +37,6 @@ function syncHint(sync: {
   enabled: boolean
   state: string
   lastError: string | null
-  cloudVisible?: number | null
 }): string {
   if (!sync.enabled) {
     return 'Este equipo guarda las notas en local. Configura Firebase para compartirlas.'
@@ -52,11 +50,7 @@ function syncHint(sync: {
       ? `No se pudo sincronizar: ${sync.lastError}`
       : 'No se pudo sincronizar.'
   }
-  const cloud =
-    typeof sync.cloudVisible === 'number'
-      ? ` Nube: ${sync.cloudVisible} visibles.`
-      : ''
-  return `Sincronizado.${cloud}`
+  return 'Sincronizado. Las notas de este buque se ven en todos los equipos.'
 }
 
 type Group = {
@@ -83,7 +77,7 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
   const { ensureProfile, openProfilePrompt, displayName } = useUserProfile()
   const { isAdmin } = useAuth()
   const isMobile = useIsMobileUi()
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useState<Filter>('open')
   const [status, setStatus] = useState<string | null>(null)
   const [ioOpen, setIoOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -164,12 +158,8 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
     try {
       const data = await file.arrayBuffer()
       const result = await importNotesExcel(data)
-      const cloud =
-        result.remoteVisible < 0
-          ? ' (no se pudo verificar la nube)'
-          : ` · en la nube: ${result.remoteVisible} visibles`
       setStatus(
-        `Restaurado y sincronizado: +${result.added} nuevas, ${result.updated} recuperadas/actualizadas, ${result.skipped} omitidas${cloud}.`,
+        `Restaurado y sincronizado: +${result.added} nuevas, ${result.updated} recuperadas/actualizadas, ${result.skipped} omitidas.`,
       )
     } catch (err) {
       setStatus(
@@ -217,31 +207,23 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
               {openBullets} abierta{openBullets === 1 ? '' : 's'}
               {displayName ? ` · ${displayName}` : ''}
             </p>
-            <p
-              className="notes-modal__hint notes-panel__total-count"
-              style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)' }}
-            >
-              Total en {vesselId}: {notes.length} nota
-              {notes.length === 1 ? '' : 's'}
-              {filter !== 'all'
-                ? ` · filtro «${filter === 'open' ? 'Abiertas' : 'Resueltas'}»`
-                : ''}
-            </p>
-            <p className="notes-modal__hint notes-panel__sync-hint">
-              {syncHint(sync)}
-              {sync.enabled ? (
-                <>
-                  {' '}
-                  <button
-                    type="button"
-                    className="notes-panel__sync-now"
-                    onClick={() => sync.syncNow()}
-                  >
-                    Actualizar
-                  </button>
-                </>
-              ) : null}
-            </p>
+            {!isMobile && (
+              <p className="notes-modal__hint notes-panel__sync-hint">
+                {syncHint(sync)}
+                {sync.enabled ? (
+                  <>
+                    {' '}
+                    <button
+                      type="button"
+                      className="notes-panel__sync-now"
+                      onClick={() => sync.syncNow()}
+                    >
+                      Actualizar
+                    </button>
+                  </>
+                ) : null}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -287,7 +269,7 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                   className="btn notes-panel__file-btn"
                   title="Recupera notas desde un Excel exportado con Exportar Excel (solo admin)"
                 >
-                  {isMobile ? 'Restaurar notas…' : 'Restaurar Excel…'}
+                  Restaurar Excel…
                   <input
                     type="file"
                     accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -296,13 +278,13 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                 </label>
               )}
             </div>
-            {isMobile && (
+            {isMobile && sync.enabled && (
               <button
                 type="button"
                 className="btn"
-                onClick={() => void forceRefreshApp()}
+                onClick={() => sync.syncNow()}
               >
-                Actualizar app
+                Actualizar
               </button>
             )}
             {isMobile && (
@@ -361,7 +343,7 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
             <p className="notes-panel__empty">
               No hay notas{' '}
               {filter === 'open'
-                ? 'con viñetas abiertas'
+                ? 'con líneas abiertas'
                 : filter === 'resolved'
                   ? 'totalmente resueltas'
                   : ''}{' '}
@@ -434,8 +416,8 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                                 }}
                                 aria-label={
                                   line.resolved
-                                    ? 'Marcar viñeta como abierta'
-                                    : 'Marcar viñeta como resuelta'
+                                    ? 'Marcar línea como abierta'
+                                    : 'Marcar línea como resuelta'
                                 }
                               />
                               <span>

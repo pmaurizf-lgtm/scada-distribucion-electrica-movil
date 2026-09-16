@@ -12,7 +12,7 @@ export type NoteLine = {
   /** Quién marcó o desmarcó el check (cualquier usuario). */
   resolvedBy?: string
   resolvedById?: string
-  /** Siempre al cambiar el check — para fusionar entre móviles. */
+  /** Siempre al cambiar el check — para fusionar entre equipos. */
   resolvedUpdatedAt?: string
   /** Última edición del texto (solo el autor). */
   textUpdatedAt?: string
@@ -28,9 +28,9 @@ export type InspectionNote = {
   authorId: string
   createdAt: string
   updatedAt: string
-  /** Baja lógica: se sincroniza para que el resto de móviles la oculten. */
+  /** Baja lógica: se sincroniza para que el resto de equipos la oculten. */
   deletedAt?: string
-  /** Cada viñeta con su propio estado resuelto. */
+  /** Cada línea con su propio estado resuelto. */
   lines: NoteLine[]
 }
 

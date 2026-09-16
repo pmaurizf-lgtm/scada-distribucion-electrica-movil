@@ -163,12 +163,12 @@ function addSummarySheet(
   addTitle(
     ws,
     `Notas de revisión · ${vesselLabel}`,
-    `Exportado ${exportedAt} · ${notes.length} nota${notes.length === 1 ? '' : 's'} · ${bullets} viñeta${bullets === 1 ? '' : 's'}`,
+    `Exportado ${exportedAt} · ${notes.length} nota${notes.length === 1 ? '' : 's'} · ${bullets} línea${bullets === 1 ? '' : 's'}`,
     5,
   )
   ws.addRow([])
 
-  const kpiHeader = ws.addRow(['Notas', 'Resueltas', 'Parciales / abiertas', 'Viñetas abiertas', 'Viñetas resueltas'])
+  const kpiHeader = ws.addRow(['Notas', 'Resueltas', 'Parciales / abiertas', 'Líneas abiertas', 'Líneas resueltas'])
   paintHeader(kpiHeader)
   const kpi = ws.addRow([
     notes.length,
@@ -201,7 +201,7 @@ function addSummarySheet(
     color: { argb: `FF${COLORS.title}` },
   }
 
-  const destHeader = ws.addRow(['Destino', 'Tipo', 'Abiertas', 'Resueltas', 'Total viñetas'])
+  const destHeader = ws.addRow(['Destino', 'Tipo', 'Abiertas', 'Resueltas', 'Total líneas'])
   paintHeader(destHeader)
 
   const destMap = new Map<
@@ -257,7 +257,7 @@ function addSummarySheet(
     size: 11,
     color: { argb: `FF${COLORS.title}` },
   }
-  const authorHeader = ws.addRow(['Autor', 'Notas', 'Viñetas abiertas', 'Viñetas resueltas', ''])
+  const authorHeader = ws.addRow(['Autor', 'Notas', 'Líneas abiertas', 'Líneas resueltas', ''])
   paintHeader(authorHeader)
 
   const authorMap = new Map<string, { notes: number; open: number; resolved: number }>()
@@ -313,7 +313,7 @@ function addNotesSheet(
   addTitle(
     ws,
     `Notas · ${vesselLabel}`,
-    'Una fila por nota. Las viñetas van juntas para leer el bloque completo. Filtra por estado.',
+    'Una fila por nota. Las líneas van juntas para leer el bloque completo. Filtra por estado.',
     8,
   )
 
@@ -322,7 +322,7 @@ function addNotesSheet(
     'Tipo',
     'Equipo / interruptor',
     'ID',
-    'Viñetas',
+    'Líneas',
     'Abiertas',
     'Autor',
     'Creada',
@@ -408,7 +408,7 @@ function addBulletsSheet(
   vesselLabel: string,
   notes: InspectionNote[],
 ): void {
-  const ws = wb.addWorksheet('Viñetas', {
+  const ws = wb.addWorksheet('Líneas', {
     views: [{ state: 'frozen', ySplit: 3 }],
     properties: { defaultRowHeight: 20 },
   })
@@ -423,7 +423,7 @@ function addBulletsSheet(
 
   addTitle(
     ws,
-    `Viñetas · ${vesselLabel}`,
+    `Líneas · ${vesselLabel}`,
     'Una fila por punto. Usa el filtro de Estado para quedarte solo con lo abierto.',
     10,
   )
@@ -433,7 +433,7 @@ function addBulletsSheet(
     'Tipo',
     'Equipo / interruptor',
     'ID',
-    'Viñeta',
+    'Línea',
     'Nº',
     'Autor',
     'Creada',
