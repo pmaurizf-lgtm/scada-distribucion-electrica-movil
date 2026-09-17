@@ -10,7 +10,6 @@ import {
 const DEFAULT_HOVER_MS = 1800
 const LONG_PRESS_MS = 1000
 const LONG_PRESS_MOVE_PX = 10
-const ZOOM_LOCK_MS = 450
 
 export const SCADA_BREAKER_HOVER = 'scada-breaker-hover'
 export const SCADA_EQUIP_BALLOON_OPEN = 'scada-equip-balloon-open'
@@ -32,46 +31,9 @@ function isCoarsePointer(): boolean {
   )
 }
 
-type EquipHoverWatch = {
-  isSticky: () => boolean
-  isHovering: () => boolean
-  arm: () => void
-  disarm: () => void
-}
-
-const watches = new Set<EquipHoverWatch>()
-let docBound = false
-let zoomLockUntil = 0
-let zoomUnlockTimer: number | null = null
-
-function bindDocumentZoomGuard() {
-  if (docBound || typeof window === 'undefined') return
-  docBound = true
-  window.addEventListener(
-    'wheel',
-    () => {
-      zoomLockUntil = performance.now() + ZOOM_LOCK_MS
-      for (const w of watches) {
-        if (!w.isSticky()) w.disarm()
-      }
-      if (zoomUnlockTimer != null) window.clearTimeout(zoomUnlockTimer)
-      zoomUnlockTimer = window.setTimeout(() => {
-        zoomUnlockTimer = null
-        if (performance.now() < zoomLockUntil) return
-        for (const w of watches) {
-          if (!w.isSticky() && w.isHovering()) w.arm()
-        }
-      }, ZOOM_LOCK_MS + 30)
-    },
-    { passive: true, capture: true },
-  )
-}
-
 /**
- * Globo de equipo (misma UX que el interruptor):
- * - Ratón: 1,8 s sobre el recuadro → globo fijo.
- * - Sin seguimiento document/pointermove (rozar Q/cables no cancela el timer).
- * - Rueda/zoom: pausa breve y rearma si el puntero sigue encima.
+ * Globo de equipo — misma regla que el interruptor (BreakerChip):
+ * - Ratón: mouseenter ~1,8 s → globo fijo (sin cancelar por rueda/trackpad).
  * - Táctil: pulsación larga ~1 s.
  */
 export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
@@ -79,7 +41,6 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
   const [sheet, setSheet] = useState(false)
   const timer = useRef<number | null>(null)
   const sticky = useRef(false)
-  const hovering = useRef(false)
   const rootRef = useRef<HTMLElement | null>(null)
   const longPressTimer = useRef<number | null>(null)
   const pressOrigin = useRef<{ x: number; y: number } | null>(null)
@@ -121,34 +82,13 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
     [clearTimer, clearLongPress],
   )
 
-  const armHover = useCallback(() => {
-    if (sticky.current) return
-    if (!hovering.current) return
-    if (performance.now() < zoomLockUntil) return
-    if (timer.current != null) return
-    timer.current = window.setTimeout(() => openSticky(false), delayMs)
-  }, [delayMs, openSticky])
-
-  const disarmHover = useCallback(() => {
-    if (sticky.current) return
-    clearTimer()
-  }, [clearTimer])
-
-  useEffect(() => {
-    bindDocumentZoomGuard()
-    const watch: EquipHoverWatch = {
-      isSticky: () => sticky.current,
-      isHovering: () => hovering.current,
-      arm: armHover,
-      disarm: disarmHover,
-    }
-    watches.add(watch)
-    return () => {
-      watches.delete(watch)
+  useEffect(
+    () => () => {
       clearTimer()
       clearLongPress()
-    }
-  }, [armHover, disarmHover, clearTimer, clearLongPress])
+    },
+    [clearTimer, clearLongPress],
+  )
 
   useEffect(() => {
     const onBreakerHover = () => {
@@ -241,14 +181,13 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
   }, [])
 
   const onMouseEnter = useCallback(() => {
-    if (isCoarsePointer()) return
-    hovering.current = true
-    armHover()
-  }, [armHover])
+    if (sticky.current) return
+    clearTimer()
+    timer.current = window.setTimeout(() => openSticky(false), delayMs)
+  }, [clearTimer, delayMs, openSticky])
 
   const onMouseLeave = useCallback(
     (e: ReactMouseEvent) => {
-      if (isCoarsePointer()) return
       const related = e.relatedTarget
       if (
         related instanceof Element &&
@@ -256,10 +195,10 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
       ) {
         return
       }
-      hovering.current = false
-      disarmHover()
+      if (sticky.current) return
+      clearTimer()
     },
-    [disarmHover],
+    [clearTimer],
   )
 
   const setAnchorEl = useCallback((el: HTMLElement | null) => {
