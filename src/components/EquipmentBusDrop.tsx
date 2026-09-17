@@ -590,6 +590,7 @@ export function EquipmentBusDrop({
                 eqBalloon.setAnchorEl(el)
               }}
               className="hbus-drop__eq-wrap"
+              {...eqBalloon.bind}
             >
               <button
                 type="button"
@@ -603,7 +604,6 @@ export function EquipmentBusDrop({
                       ? `Doble clic para ${expanded ? 'plegar' : 'desplegar'} salidas`
                       : `${equipment.id} · ${equipment.name}`
                 }
-                {...eqBalloon.bind}
                 onClick={(e) => {
                   e.stopPropagation()
                   eqBalloon.onClick(e)

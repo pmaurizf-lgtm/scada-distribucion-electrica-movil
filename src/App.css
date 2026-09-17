@@ -3118,16 +3118,18 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   filter: none;
 }
 
+/*
+ * Atenuar sin `filter`: con zoom (transform: scale) el filter en el chip
+ * rompe hit-test/hover en Chromium y el globo de equipo no llega a armarse.
+ */
 .scada--board-energizations .equip-chassis:not(.equip-chassis--board-live),
 .scada--board-energizations .hbus-drop__eq:not(.hbus-drop__eq--board-live) {
-  opacity: 0.62;
-  filter: saturate(0.45);
+  opacity: 0.58;
 }
 
 .scada--board-energizations .equip-chassis--board-live,
 .scada--board-energizations .hbus-drop__eq--board-live {
   opacity: 1;
-  filter: none;
 }
 
 .casc-brk--flash {

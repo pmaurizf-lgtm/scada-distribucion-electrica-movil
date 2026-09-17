@@ -32,6 +32,10 @@ function isCoarsePointer(): boolean {
   )
 }
 
+function isBreakerTarget(t: EventTarget | null): boolean {
+  return t instanceof Element && Boolean(t.closest('.casc-brk'))
+}
+
 const EQUIP_HIT =
   '.hbus-drop__eq, .equip-chassis__label, .stree-eq, .hbus-drop__csb-src'
 
@@ -63,23 +67,45 @@ type EquipHoverWatch = {
 const watches = new Set<EquipHoverWatch>()
 let docBound = false
 let zoomLockUntil = 0
+let lastPtr = { x: 0, y: 0 }
+let zoomUnlockTimer: number | null = null
 
 function watchOwnsHit(root: HTMLElement, hit: HTMLElement | null) {
   if (!hit) return false
   return root === hit || root.contains(hit) || hit.contains(root)
 }
 
-function onDocumentPointerMove(e: PointerEvent) {
-  if (e.pointerType === 'touch') return
-  if (performance.now() < zoomLockUntil) return
-  const hit = findEquipUnderPointer(e.clientX, e.clientY)
+function isOverWatch(
+  root: HTMLElement,
+  target: EventTarget | null,
+  hit: HTMLElement | null,
+): boolean {
+  if (isBreakerTarget(target)) return false
+  if (target instanceof Node && root.contains(target)) return true
+  if (watchOwnsHit(root, hit)) return true
+  try {
+    return root.matches(':hover')
+  } catch {
+    return false
+  }
+}
+
+function syncWatchesAtPointer(x: number, y: number, target: EventTarget | null) {
+  const hit = isBreakerTarget(target) ? null : findEquipUnderPointer(x, y)
   for (const w of watches) {
     if (w.isSticky()) continue
     const root = w.root()
     if (!root) continue
-    if (watchOwnsHit(root, hit) || root.matches(':hover')) w.arm()
+    if (isOverWatch(root, target, hit)) w.arm()
     else w.disarm()
   }
+}
+
+function onDocumentPointerMove(e: PointerEvent) {
+  if (e.pointerType === 'touch') return
+  lastPtr = { x: e.clientX, y: e.clientY }
+  if (performance.now() < zoomLockUntil) return
+  syncWatchesAtPointer(e.clientX, e.clientY, e.target)
 }
 
 function onDocumentWheel() {
@@ -87,6 +113,13 @@ function onDocumentWheel() {
   for (const w of watches) {
     if (!w.isSticky()) w.disarm()
   }
+  if (zoomUnlockTimer != null) window.clearTimeout(zoomUnlockTimer)
+  zoomUnlockTimer = window.setTimeout(() => {
+    zoomUnlockTimer = null
+    if (performance.now() < zoomLockUntil) return
+    const el = document.elementFromPoint(lastPtr.x, lastPtr.y)
+    syncWatchesAtPointer(lastPtr.x, lastPtr.y, el)
+  }, ZOOM_LOCK_MS + 20)
 }
 
 function bindDocumentHover() {
