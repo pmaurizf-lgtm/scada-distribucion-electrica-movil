@@ -4001,7 +4001,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 .hbus-drop__eq-wrap {
   position: relative;
   width: 100%;
-  z-index: 4;
+  z-index: 6;
+  pointer-events: auto;
 }
 
 /* Al mostrar el globo, subir por encima de cables, QT y salidas vecinas */

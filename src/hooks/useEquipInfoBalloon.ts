@@ -10,7 +10,7 @@ import {
 const DEFAULT_HOVER_MS = 1800
 const LONG_PRESS_MS = 1000
 const LONG_PRESS_MOVE_PX = 10
-const ZOOM_LOCK_MS = 500
+const ZOOM_LOCK_MS = 450
 
 export const SCADA_BREAKER_HOVER = 'scada-breaker-hover'
 export const SCADA_EQUIP_BALLOON_OPEN = 'scada-equip-balloon-open'
@@ -32,34 +32,9 @@ function isCoarsePointer(): boolean {
   )
 }
 
-function isBreakerTarget(t: EventTarget | null): boolean {
-  return t instanceof Element && Boolean(t.closest('.casc-brk'))
-}
-
-const EQUIP_HIT =
-  '.hbus-drop__eq, .equip-chassis__label, .stree-eq, .hbus-drop__csb-src'
-
-function findEquipUnderPointer(x: number, y: number): HTMLElement | null {
-  const stack = document.elementsFromPoint(x, y)
-  if (stack.length === 0) return null
-  const top = stack[0]
-  if (
-    top.closest(
-      '.casc-brk, .circuit-balloon, .equip-balloon--portal, .notes-modal, .notes-modal-backdrop',
-    )
-  ) {
-    return null
-  }
-  for (const el of stack) {
-    const hit = el.closest(EQUIP_HIT)
-    if (hit instanceof HTMLElement) return hit
-  }
-  return null
-}
-
 type EquipHoverWatch = {
-  root: () => HTMLElement | null
   isSticky: () => boolean
+  isHovering: () => boolean
   arm: () => void
   disarm: () => void
 }
@@ -67,81 +42,44 @@ type EquipHoverWatch = {
 const watches = new Set<EquipHoverWatch>()
 let docBound = false
 let zoomLockUntil = 0
-let lastPtr = { x: 0, y: 0 }
 let zoomUnlockTimer: number | null = null
 
-function watchOwnsHit(root: HTMLElement, hit: HTMLElement | null) {
-  if (!hit) return false
-  return root === hit || root.contains(hit) || hit.contains(root)
-}
-
-function isOverWatch(
-  root: HTMLElement,
-  target: EventTarget | null,
-  hit: HTMLElement | null,
-): boolean {
-  if (isBreakerTarget(target)) return false
-  if (target instanceof Node && root.contains(target)) return true
-  if (watchOwnsHit(root, hit)) return true
-  try {
-    return root.matches(':hover')
-  } catch {
-    return false
-  }
-}
-
-function syncWatchesAtPointer(x: number, y: number, target: EventTarget | null) {
-  const hit = isBreakerTarget(target) ? null : findEquipUnderPointer(x, y)
-  for (const w of watches) {
-    if (w.isSticky()) continue
-    const root = w.root()
-    if (!root) continue
-    if (isOverWatch(root, target, hit)) w.arm()
-    else w.disarm()
-  }
-}
-
-function onDocumentPointerMove(e: PointerEvent) {
-  if (e.pointerType === 'touch') return
-  lastPtr = { x: e.clientX, y: e.clientY }
-  if (performance.now() < zoomLockUntil) return
-  syncWatchesAtPointer(e.clientX, e.clientY, e.target)
-}
-
-function onDocumentWheel() {
-  zoomLockUntil = performance.now() + ZOOM_LOCK_MS
-  for (const w of watches) {
-    if (!w.isSticky()) w.disarm()
-  }
-  if (zoomUnlockTimer != null) window.clearTimeout(zoomUnlockTimer)
-  zoomUnlockTimer = window.setTimeout(() => {
-    zoomUnlockTimer = null
-    if (performance.now() < zoomLockUntil) return
-    const el = document.elementFromPoint(lastPtr.x, lastPtr.y)
-    syncWatchesAtPointer(lastPtr.x, lastPtr.y, el)
-  }, ZOOM_LOCK_MS + 20)
-}
-
-function bindDocumentHover() {
+function bindDocumentZoomGuard() {
   if (docBound || typeof window === 'undefined') return
   docBound = true
-  window.addEventListener('pointermove', onDocumentPointerMove, {
-    passive: true,
-  })
-  window.addEventListener('wheel', onDocumentWheel, { passive: true, capture: true })
+  window.addEventListener(
+    'wheel',
+    () => {
+      zoomLockUntil = performance.now() + ZOOM_LOCK_MS
+      for (const w of watches) {
+        if (!w.isSticky()) w.disarm()
+      }
+      if (zoomUnlockTimer != null) window.clearTimeout(zoomUnlockTimer)
+      zoomUnlockTimer = window.setTimeout(() => {
+        zoomUnlockTimer = null
+        if (performance.now() < zoomLockUntil) return
+        for (const w of watches) {
+          if (!w.isSticky() && w.isHovering()) w.arm()
+        }
+      }, ZOOM_LOCK_MS + 30)
+    },
+    { passive: true, capture: true },
+  )
 }
 
 /**
- * Globo de equipo:
- * - Ratón/lápiz: 1,8 s con el puntero sobre el recuadro (mismo criterio que el interruptor).
- * - La rueda de zoom no abre ni mantiene el globo.
- * - Táctil: pulsación larga (~1 s).
+ * Globo de equipo (misma UX que el interruptor):
+ * - Ratón: 1,8 s sobre el recuadro → globo fijo.
+ * - Sin seguimiento document/pointermove (rozar Q/cables no cancela el timer).
+ * - Rueda/zoom: pausa breve y rearma si el puntero sigue encima.
+ * - Táctil: pulsación larga ~1 s.
  */
 export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
   const [show, setShow] = useState(false)
   const [sheet, setSheet] = useState(false)
   const timer = useRef<number | null>(null)
   const sticky = useRef(false)
+  const hovering = useRef(false)
   const rootRef = useRef<HTMLElement | null>(null)
   const longPressTimer = useRef<number | null>(null)
   const pressOrigin = useRef<{ x: number; y: number } | null>(null)
@@ -185,6 +123,7 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
 
   const armHover = useCallback(() => {
     if (sticky.current) return
+    if (!hovering.current) return
     if (performance.now() < zoomLockUntil) return
     if (timer.current != null) return
     timer.current = window.setTimeout(() => openSticky(false), delayMs)
@@ -196,10 +135,10 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
   }, [clearTimer])
 
   useEffect(() => {
-    bindDocumentHover()
+    bindDocumentZoomGuard()
     const watch: EquipHoverWatch = {
-      root: () => rootRef.current,
       isSticky: () => sticky.current,
+      isHovering: () => hovering.current,
       arm: armHover,
       disarm: disarmHover,
     }
@@ -303,6 +242,7 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
 
   const onMouseEnter = useCallback(() => {
     if (isCoarsePointer()) return
+    hovering.current = true
     armHover()
   }, [armHover])
 
@@ -316,6 +256,7 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
       ) {
         return
       }
+      hovering.current = false
       disarmHover()
     },
     [disarmHover],
