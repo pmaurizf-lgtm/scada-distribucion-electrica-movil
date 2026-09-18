@@ -10,9 +10,11 @@ import { parseEnergizationsExcel } from './parseEnergizationsExcel'
 import {
   clearPersistedBoardEnergizations,
   energizationEntriesFingerprint,
+  getEnergizationsUpdatedAt,
   loadPersistedBoardEnergizations,
   savePersistedBoardEnergizations,
 } from './persistence'
+import type { EnergizationsCloudPayload } from './cloudSync'
 import { resolveEnergizations } from './resolveEnergizations'
 import {
   EMPTY_ENERGIZATION_OVERLAY,
@@ -40,6 +42,10 @@ export type LoadEnergizationsResult = EnergizationImportStats & {
 let activeVesselId: VesselId | null = null
 let cachedEntries: EnergizationEntry[] | null = null
 let cachedFingerprint: string | null = null
+/** ISO LWW · mutaciones locales / adopción cloud */
+let cachedUpdatedAt = '1970-01-01T00:00:00.000Z'
+let suppressCloudPublish = false
+const cloudPublishListeners = new Set<() => void>()
 let meta: Omit<
   EnergizationOverlayState,
   'energizedCircuitIds' | 'deadCircuitIds' | 'energizedEquipmentIds'
@@ -80,6 +86,15 @@ function entriesMatchingTopology(
   return entries.filter((e) => refs.has(e.cableCode.trim().toUpperCase()))
 }
 
+function bumpUpdatedAt(iso?: string) {
+  cachedUpdatedAt = iso ?? new Date().toISOString()
+}
+
+function notifyCloudPublish() {
+  if (suppressCloudPublish) return
+  for (const l of cloudPublishListeners) l()
+}
+
 function persistCurrent(): boolean {
   if (!activeVesselId) return false
   if (!cachedEntries?.length || !cachedFingerprint) {
@@ -92,6 +107,7 @@ function persistCurrent(): boolean {
     fileName: meta.fileName,
     fingerprint: cachedFingerprint,
     entries: cachedEntries,
+    updatedAt: cachedUpdatedAt,
   })
 }
 
@@ -129,6 +145,7 @@ function loadVesselIntoMemory(
 ): void {
   const stored = loadPersistedBoardEnergizations(vesselId)
   activeVesselId = vesselId
+  cachedUpdatedAt = getEnergizationsUpdatedAt(stored)
   if (!stored?.entries.length) {
     cachedEntries = null
     cachedFingerprint = null
@@ -218,6 +235,7 @@ export function loadEnergizationsFromExcel(
       notice: `Excel «${fileName}» sin cambios respecto al memorizado de ${activeVesselId} (${allEntries.length} filas). Capa activa.`,
     }
     bumpRevision()
+    bumpUpdatedAt()
     applyResolve(data, meta.notice)
     const persisted = persistCurrent()
     if (!persisted) {
@@ -228,6 +246,7 @@ export function loadEnergizationsFromExcel(
       cachedState = { ...cachedState, notice: meta.notice }
     }
     emit()
+    notifyCloudPublish()
     return {
       ...(cachedState.stats ?? {
         rowsRead: allEntries.length,
@@ -250,6 +269,7 @@ export function loadEnergizationsFromExcel(
     notice: null,
   }
   bumpRevision()
+  bumpUpdatedAt()
   applyResolve(data, null)
   const stats: EnergizationImportStats = {
     rowsRead: allEntries.length,
@@ -263,11 +283,12 @@ export function loadEnergizationsFromExcel(
   const persisted = persistCurrent()
   const baseNotice = `Energizaciones «${fileName}» memorizadas (${activeVesselId}): ${stats.energized} cables SI · ${stats.dead} NO · ${stats.matched} cruzados con el unifilar (${stats.skippedUnknown} sin match).`
   const notice = persisted
-    ? baseNotice
+    ? `${baseNotice} Sincronizando entre dispositivos…`
     : `${baseNotice} Aviso: no se pudo guardar en este navegador (almacenamiento lleno); se perderá al cambiar de buque.`
   meta = { ...meta, notice }
   cachedState = { ...cachedState, notice }
   emit()
+  notifyCloudPublish()
   return {
     ...stats,
     unchanged: false,
@@ -295,9 +316,11 @@ export function setBoardEnergizationsEnabled(enabled: boolean): void {
     : `Capa de energizaciones desactivada (${activeVesselId}; datos memorizados).`
   meta = { ...meta, enabled, notice }
   bumpRevision()
+  bumpUpdatedAt()
   applyResolve(getTopology(), notice)
   persistCurrent()
   emit()
+  notifyCloudPublish()
 }
 
 export function clearEnergizations(): void {
@@ -305,8 +328,79 @@ export function clearEnergizations(): void {
   cachedFingerprint = null
   meta = emptyMeta(meta.revision + 1)
   cachedState = { ...EMPTY_ENERGIZATION_OVERLAY, revision: meta.revision }
-  if (activeVesselId) clearPersistedBoardEnergizations(activeVesselId)
+  bumpUpdatedAt()
+  if (activeVesselId) {
+    /* Tombstone local vacío con updatedAt para que el cloud propague el borrado. */
+    savePersistedBoardEnergizations(activeVesselId, {
+      version: 1,
+      enabled: false,
+      fileName: null,
+      fingerprint: '',
+      entries: [],
+      updatedAt: cachedUpdatedAt,
+    })
+  }
   emit()
+  notifyCloudPublish()
+}
+
+export function getEnergizationsCloudSnapshot(): EnergizationsCloudPayload | null {
+  if (!activeVesselId) return null
+  return {
+    vesselId: activeVesselId,
+    updatedAt: cachedUpdatedAt,
+    enabled: meta.enabled,
+    fileName: meta.fileName,
+    fingerprint: cachedFingerprint ?? '',
+    entries: cachedEntries ?? [],
+  }
+}
+
+export function getEnergizationsUpdatedAtIso(): string {
+  return cachedUpdatedAt
+}
+
+/** Adopta estado remoto (LWW). No dispara publish. */
+export function adoptEnergizationsFromCloud(
+  remote: EnergizationsCloudPayload,
+  data: DistributionData = getTopology(),
+): void {
+  if (!activeVesselId || remote.vesselId !== activeVesselId) return
+  suppressCloudPublish = true
+  try {
+    cachedUpdatedAt = remote.updatedAt
+    if (!remote.entries.length) {
+      cachedEntries = null
+      cachedFingerprint = null
+      meta = emptyMeta(meta.revision + 1)
+      cachedState = { ...EMPTY_ENERGIZATION_OVERLAY, revision: meta.revision }
+      clearPersistedBoardEnergizations(activeVesselId)
+      emit()
+      return
+    }
+    cachedEntries = remote.entries
+    cachedFingerprint = remote.fingerprint || energizationEntriesFingerprint(remote.entries)
+    meta = {
+      enabled: remote.enabled,
+      hasData: true,
+      fileName: remote.fileName,
+      notice: null,
+      stats: null,
+      revision: meta.revision + 1,
+    }
+    applyResolve(data, null)
+    persistCurrent()
+    emit()
+  } finally {
+    suppressCloudPublish = false
+  }
+}
+
+export function subscribeEnergizationsCloudPublish(
+  listener: () => void,
+): () => void {
+  cloudPublishListeners.add(listener)
+  return () => cloudPublishListeners.delete(listener)
 }
 
 export function clearEnergizationNotice(): void {

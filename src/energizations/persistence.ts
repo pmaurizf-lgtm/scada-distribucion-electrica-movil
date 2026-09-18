@@ -11,6 +11,8 @@ export type PersistedBoardEnergizations = {
   fingerprint: string
   /** Solo filas que cruzan con circuitRef del unifilar (compacto). */
   entries: EnergizationEntry[]
+  /** ISO · LWW cloud / local */
+  updatedAt?: string
 }
 
 function storageKey(vesselId: VesselId): string {
@@ -69,7 +71,11 @@ export function savePersistedBoardEnergizations(
   data: PersistedBoardEnergizations,
 ): boolean {
   try {
-    localStorage.setItem(storageKey(vesselId), JSON.stringify(data))
+    const payload: PersistedBoardEnergizations = {
+      ...data,
+      updatedAt: data.updatedAt ?? new Date().toISOString(),
+    }
+    localStorage.setItem(storageKey(vesselId), JSON.stringify(payload))
     return true
   } catch {
     return false
@@ -82,4 +88,11 @@ export function clearPersistedBoardEnergizations(vesselId: VesselId): void {
   } catch {
     /* ignore */
   }
+}
+
+export function getEnergizationsUpdatedAt(
+  data: PersistedBoardEnergizations | null,
+): string {
+  if (data?.updatedAt) return data.updatedAt
+  return '1970-01-01T00:00:00.000Z'
 }

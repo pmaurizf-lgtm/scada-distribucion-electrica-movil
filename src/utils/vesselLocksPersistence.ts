@@ -1,6 +1,7 @@
 /**
  * Candados LOTO por buque (independientes).
  * El unifilar (circuitos / interruptores) es compartido.
+ * Sync cloud: vessels/{vesselId}/locks/state (LWW por updatedAt).
  */
 import type { CircuitLockInfo } from './parseLocksExcel'
 import type { VesselId } from '../vessels/vesselCatalog'
@@ -15,7 +16,10 @@ export type PersistedVesselLocks = {
   v: 1
   lockedCircuits: string[]
   lockInfoByCircuit: Record<string, CircuitLockInfo>
-  savedAt: string
+  /** ISO · LWW cloud / local */
+  updatedAt: string
+  /** @deprecated alias de updatedAt en lecturas antiguas */
+  savedAt?: string
 }
 
 function storageKey(vesselId: VesselId): string {
@@ -25,19 +29,24 @@ function storageKey(vesselId: VesselId): string {
 export function defaultLocksForVessel(vesselId: VesselId): {
   lockedCircuits: string[]
   lockInfoByCircuit: Record<string, CircuitLockInfo>
+  updatedAt: string
 } {
+  /** Epoch bajo: un remoto en la nube siempre gana al seed local. */
+  const updatedAt = '1970-01-01T00:00:00.000Z'
   if (vesselUsesSeedLocks(vesselId)) {
     return {
       lockedCircuits: Object.keys(SEED_LOCKS),
       lockInfoByCircuit: { ...SEED_LOCKS },
+      updatedAt,
     }
   }
-  return { lockedCircuits: [], lockInfoByCircuit: {} }
+  return { lockedCircuits: [], lockInfoByCircuit: {}, updatedAt }
 }
 
 export function loadVesselLocks(vesselId: VesselId): {
   lockedCircuits: string[]
   lockInfoByCircuit: Record<string, CircuitLockInfo>
+  updatedAt: string
 } {
   try {
     const raw = localStorage.getItem(storageKey(vesselId))
@@ -51,9 +60,14 @@ export function loadVesselLocks(vesselId: VesselId): {
     ) {
       return defaultLocksForVessel(vesselId)
     }
+    const updatedAt =
+      (typeof parsed.updatedAt === 'string' && parsed.updatedAt) ||
+      (typeof parsed.savedAt === 'string' && parsed.savedAt) ||
+      '1970-01-01T00:00:00.000Z'
     return {
       lockedCircuits: parsed.lockedCircuits,
       lockInfoByCircuit: { ...parsed.lockInfoByCircuit },
+      updatedAt,
     }
   } catch {
     return defaultLocksForVessel(vesselId)
@@ -65,8 +79,11 @@ export function saveVesselLocks(
   data: {
     lockedCircuits: Set<string> | string[]
     lockInfoByCircuit: Record<string, CircuitLockInfo>
+    /** Si se omite, se usa ahora (mutación local). */
+    updatedAt?: string
   },
-): void {
+): string {
+  const updatedAt = data.updatedAt ?? new Date().toISOString()
   try {
     const locked = Array.isArray(data.lockedCircuits)
       ? data.lockedCircuits
@@ -75,12 +92,14 @@ export function saveVesselLocks(
       v: 1,
       lockedCircuits: locked,
       lockInfoByCircuit: { ...data.lockInfoByCircuit },
-      savedAt: new Date().toISOString(),
+      updatedAt,
+      savedAt: updatedAt,
     }
     localStorage.setItem(storageKey(vesselId), JSON.stringify(payload))
   } catch {
     /* cuota / modo privado */
   }
+  return updatedAt
 }
 
 export { SEED_LOCKS as F111_SEED_LOCKS }

@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { displaySourceFileName, system690 } from '../data/system690'
 import {
-  sampleProtectionStatus,
+  buildOpenProtectionStatus,
   toProtectionStatusMap,
 } from '../data/sampleProtectionStatus'
 import type { ProtectionStatusMap } from '../types'
@@ -39,6 +39,7 @@ import {
   type VesselId,
 } from '../vessels/vesselCatalog'
 import { LockInfoProvider } from '../locks/LockInfoContext'
+import { useLocksCloudSync } from '../locks/useLocksCloudSync'
 import { LockBalloon, placeLockBalloon } from './LockBalloon'
 import { useIsMobileUi } from '../hooks/useIsMobileUi'
 import {
@@ -49,36 +50,35 @@ import {
 } from './CascadeView'
 import { NavantiaLogo } from './NavantiaLogo'
 import { StartupFeedsPanel } from './StartupFeedsPanel'
-import { PwaUpdateToast } from './PwaUpdateToast'
 import { NoteEditorModal } from './NoteEditorModal'
 import { NotesPanel } from './NotesPanel'
 import { useNotes } from '../notes/NotesContext'
 import { useUserProfile } from '../notes/UserProfileContext'
 import { useAuth } from '../auth'
 import {
+  clearTopologyNotice,
+  loadTopologyFromExcel,
+  resetTopologyToEmbedded,
+  useTopologyState,
+} from '../topology'
+import {
   clearEnergizations,
   isBoardLayerVisible,
   loadEnergizationsFromExcel,
+  refreshEnergizationsForTopology,
   setBoardEnergizationsEnabled,
   setEnergizationsVessel,
   useEnergizationOverlay,
 } from '../energizations'
+import { useEnergizationsCloudSync } from '../energizations/useEnergizationsCloudSync'
 
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 2.5
 const ZOOM_STEP = 0.15
-const PWA_HINT_KEY = 'scada-f110-pwa-hint-dismissed'
 const MAX_LOCK_EXCEL_BYTES = 8 * 1024 * 1024
+const MAX_CIRCUIT_LIST_BYTES = 32 * 1024 * 1024
 const MAX_ENERGIZATION_BYTES = 16 * 1024 * 1024
 const ALLOWED_LOCK_EXCEL_RE = /\.(xlsx|xls|xlsm)$/i
-
-const searchableEquipment = system690.equipment.filter(
-  (e) =>
-    !e.virtual &&
-    !e.id.startsWith('BUS-') &&
-    !e.id.startsWith('SPARE-') &&
-    e.id !== 'ORIGEN-PENDIENTE',
-)
 
 const REST_STATUS_SOURCE = 'reposo · todos abiertos · gens parados'
 
@@ -99,11 +99,6 @@ function locksStatusLine(
     : `${name} · ${REST_STATUS_SOURCE}`
 }
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
 type ScadaCanvasProps = {
   vesselId: VesselId
   onVesselChange: (id: VesselId) => void
@@ -111,13 +106,15 @@ type ScadaCanvasProps = {
 
 export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const circuitListInputRef = useRef<HTMLInputElement>(null)
   const energizationInputRef = useRef<HTMLInputElement>(null)
   const candadosDetailsRef = useRef<HTMLDetailsElement>(null)
   const cascadeRef = useRef<CascadeViewHandle>(null)
   const isMobile = useIsMobileUi()
   const { notes } = useNotes()
   const { displayName, openProfilePrompt } = useUserProfile()
-  const { isAdmin } = useAuth()
+  const { signOutUser, isAdmin } = useAuth()
+  const topo = useTopologyState()
   const energ = useEnergizationOverlay()
 
   useEffect(() => {
@@ -126,11 +123,12 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
 
   const [notesPanelOpen, setNotesPanelOpen] = useState(false)
   const [chromeCollapsed, setChromeCollapsed] = useState(false)
+  const [topologyBusy, setTopologyBusy] = useState(false)
   const [protectionStatus, setProtectionStatus] = useState<ProtectionStatusMap>(
     () => {
       const locks = loadVesselLocks(vesselId)
       return withLocksOpen(
-        toProtectionStatusMap(sampleProtectionStatus),
+        toProtectionStatusMap(buildOpenProtectionStatus(system690)),
         locks.lockedCircuits,
       )
     },
@@ -142,6 +140,72 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const [lockInfoByCircuit, setLockInfoByCircuit] = useState<
     Record<string, CircuitLockInfo>
   >(() => ({ ...loadVesselLocks(vesselId).lockInfoByCircuit }))
+  const locksUpdatedAtRef = useRef(loadVesselLocks(vesselId).updatedAt)
+  const lockedCircuitsRef = useRef(lockedCircuits)
+  const lockInfoRef = useRef(lockInfoByCircuit)
+  lockedCircuitsRef.current = lockedCircuits
+  lockInfoRef.current = lockInfoByCircuit
+  const applyingLocksRemoteRef = useRef(false)
+
+  const getLocksSnapshot = useCallback(
+    () => ({
+      updatedAt: locksUpdatedAtRef.current,
+      lockedCircuits: [...lockedCircuitsRef.current],
+      lockInfoByCircuit: lockInfoRef.current,
+    }),
+    [],
+  )
+
+  const applyRemoteLocks = useCallback(
+    (remote: {
+      updatedAt: string
+      lockedCircuits: string[]
+      lockInfoByCircuit: Record<string, CircuitLockInfo>
+    }) => {
+      applyingLocksRemoteRef.current = true
+      locksUpdatedAtRef.current = remote.updatedAt
+      setLockedCircuits(new Set(remote.lockedCircuits))
+      setLockInfoByCircuit({ ...remote.lockInfoByCircuit })
+      setProtectionStatus((prev) =>
+        applyLocksToProtectionStatus(prev, remote.lockedCircuits),
+      )
+      saveVesselLocks(vesselId, {
+        lockedCircuits: remote.lockedCircuits,
+        lockInfoByCircuit: remote.lockInfoByCircuit,
+        updatedAt: remote.updatedAt,
+      })
+      setStatusSource(
+        locksStatusLine(vesselId, remote.lockedCircuits.length) +
+          ' · sync nube',
+      )
+    },
+    [vesselId],
+  )
+
+  const { publishLocal: publishLocks } = useLocksCloudSync(
+    vesselId,
+    getLocksSnapshot,
+    applyRemoteLocks,
+  )
+  useEnergizationsCloudSync(vesselId)
+
+  const bumpPublishLocks = useCallback(() => {
+    locksUpdatedAtRef.current = new Date().toISOString()
+    window.setTimeout(() => {
+      saveVesselLocks(vesselId, {
+        lockedCircuits: lockedCircuitsRef.current,
+        lockInfoByCircuit: lockInfoRef.current,
+        updatedAt: locksUpdatedAtRef.current,
+      })
+      publishLocks({
+        updatedAt: locksUpdatedAtRef.current,
+        lockedCircuits: [...lockedCircuitsRef.current],
+        lockInfoByCircuit: lockInfoRef.current,
+        source: 'local',
+      })
+    }, 0)
+  }, [publishLocks, vesselId])
+
   const [lockBalloon, setLockBalloon] = useState<{
     info: CircuitLockInfo
     protectionName?: string
@@ -154,6 +218,9 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const [lockTool, setLockTool] = useState<LockTool>('none')
   const [zoom, setZoom] = useState(1)
   const [statusSource, setStatusSource] = useState(() => {
+    if (topo.sessionOverride && topo.fileName) {
+      return `lista circuitos (sesión): ${topo.fileName}`
+    }
     const n = loadVesselLocks(vesselId).lockedCircuits.length
     return locksStatusLine(vesselId, n)
   })
@@ -164,15 +231,6 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const [locateEquipmentId, setLocateEquipmentId] = useState<string | null>(
     null,
   )
-  const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null)
-  const [showPwaHint, setShowPwaHint] = useState(() => {
-    try {
-      return localStorage.getItem(PWA_HINT_KEY) !== '1'
-    } catch {
-      return true
-    }
-  })
   const [startupMode, setStartupMode] = useState(false)
   const [simulationActive, setSimulationActive] = useState(false)
 
@@ -182,9 +240,22 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   }, [])
 
   useEffect(() => {
+    if (!topo.notice) return
+    setSearchHint(topo.notice)
+    // Quitar el aviso del store en el siguiente tick para no encadenar updates.
+    const t = window.setTimeout(() => clearTopologyNotice(), 0)
+    return () => window.clearTimeout(t)
+  }, [topo.notice])
+
+  useEffect(() => {
     if (!energ.notice) return
     setSearchHint(energ.notice)
   }, [energ.notice])
+
+  useEffect(() => {
+    if (!energ.hasData) return
+    refreshEnergizationsForTopology(system690)
+  }, [topo.revision, energ.hasData])
 
   useEffect(() => {
     if (isMobile) {
@@ -211,15 +282,6 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   }, [])
 
   useEffect(() => {
-    const onBip = (e: Event) => {
-      e.preventDefault()
-      setInstallPrompt(e as BeforeInstallPromptEvent)
-    }
-    window.addEventListener('beforeinstallprompt', onBip)
-    return () => window.removeEventListener('beforeinstallprompt', onBip)
-  }, [])
-
-  useEffect(() => {
     savePersistedSim({
       protectionStatus,
       lockedCircuits,
@@ -228,15 +290,27 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   }, [protectionStatus, lockedCircuits, runningGenerators])
 
   useEffect(() => {
-    saveVesselLocks(vesselId, { lockedCircuits, lockInfoByCircuit })
+    if (applyingLocksRemoteRef.current) {
+      applyingLocksRemoteRef.current = false
+      return
+    }
+    saveVesselLocks(vesselId, {
+      lockedCircuits,
+      lockInfoByCircuit,
+      updatedAt: locksUpdatedAtRef.current,
+    })
   }, [vesselId, lockedCircuits, lockInfoByCircuit])
 
   const switchVessel = useCallback(
     (next: VesselId) => {
       if (next === vesselId) return
-      saveVesselLocks(vesselId, { lockedCircuits, lockInfoByCircuit })
+      saveVesselLocks(vesselId, {
+        lockedCircuits,
+        lockInfoByCircuit,
+        updatedAt: locksUpdatedAtRef.current,
+      })
       const loaded = loadVesselLocks(next)
-      saveVesselLocks(next, loaded)
+      locksUpdatedAtRef.current = loaded.updatedAt
       setLockedCircuits(new Set(loaded.lockedCircuits))
       setLockInfoByCircuit({ ...loaded.lockInfoByCircuit })
       setProtectionStatus((prev) =>
@@ -251,29 +325,24 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     [vesselId, lockedCircuits, lockInfoByCircuit, onVesselChange],
   )
 
+  const searchableEquipment = useMemo(
+    () =>
+      system690.equipment.filter(
+        (e) =>
+          !e.virtual &&
+          !e.id.startsWith('BUS-') &&
+          !e.id.startsWith('SPARE-') &&
+          e.id !== 'ORIGEN-PENDIENTE',
+      ),
+    [topo.revision],
+  )
+
   const { energizedCircuitIds, energizedEquipmentIds, energizedBusHalves } =
     useMemo(
       () =>
         computeEnergyFlow(system690, protectionStatus, runningGenerators),
-      [protectionStatus, runningGenerators],
+      [protectionStatus, runningGenerators, topo.revision],
     )
-
-  const dismissPwaHint = () => {
-    setShowPwaHint(false)
-    try {
-      localStorage.setItem(PWA_HINT_KEY, '1')
-    } catch {
-      /* ignore */
-    }
-  }
-
-  const handleInstallClick = async () => {
-    if (!installPrompt) return
-    await installPrompt.prompt()
-    await installPrompt.userChoice
-    setInstallPrompt(null)
-    dismissPwaHint()
-  }
 
   const toggleGenerator = useCallback(
     (genId: string) => {
@@ -298,7 +367,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     const defaults = defaultLocksForVessel(vesselId)
     setProtectionStatus(
       withLocksOpen(
-        toProtectionStatusMap(sampleProtectionStatus),
+        toProtectionStatusMap(buildOpenProtectionStatus(system690)),
         defaults.lockedCircuits,
       ),
     )
@@ -308,9 +377,21 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     setLockBalloon(null)
     setLockTool('none')
     setStatusSource(locksStatusLine(vesselId, defaults.lockedCircuits.length))
-    saveVesselLocks(vesselId, defaults)
+    locksUpdatedAtRef.current = new Date().toISOString()
+    saveVesselLocks(vesselId, {
+      ...defaults,
+      updatedAt: locksUpdatedAtRef.current,
+    })
     clearPersistedSim()
-  }, [vesselId])
+    window.setTimeout(() => {
+      publishLocks({
+        updatedAt: locksUpdatedAtRef.current,
+        lockedCircuits: defaults.lockedCircuits,
+        lockInfoByCircuit: defaults.lockInfoByCircuit,
+        source: 'reset',
+      })
+    }, 0)
+  }, [vesselId, publishLocks])
 
   const handleSimulateToggle = useCallback(() => {
     setSimulationActive((active) => {
@@ -363,7 +444,8 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     setLockedCircuits((prev) => new Set(prev).add(circuitId))
     setProtectionStatus((prev) => ({ ...prev, [circuitId]: 'abierta' }))
     setStatusSource('candado aplicado · interruptor abierto y bloqueado')
-  }, [simulationActive])
+    bumpPublishLocks()
+  }, [simulationActive, bumpPublishLocks])
 
   const handleUnlockCircuit = useCallback((circuitId: string) => {
     if (!simulationActive) {
@@ -385,7 +467,8 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     })
     setLockBalloon(null)
     setStatusSource('candado retirado · interruptor manipulable')
-  }, [simulationActive])
+    bumpPublishLocks()
+  }, [simulationActive, bumpPublishLocks])
 
   const showLockInfo = useCallback(
     (info: CircuitLockInfo, rect: DOMRect) => {
@@ -471,9 +554,10 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
             `candados Excel: ${file.name} · ${circuitIds.length} interruptores${extra}`,
           )
           setSearchHint(
-            `Candados cargados: ${circuitIds.length} interruptores (nº LOTO en col. L)${extra}. Pulsa el candado para ver el número.`,
+            `Candados cargados: ${circuitIds.length} interruptores (nº LOTO en col. L)${extra}. Pulsa el candado para ver el número. Se sincronizan en la nube.`,
           )
           closeCandadosMenu()
+          bumpPublishLocks()
           return
         }
 
@@ -522,9 +606,10 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
           `candados Excel: ${file.name} · ${circuitIds.length} interruptores${extra}`,
         )
         setSearchHint(
-          `Candados cargados: ${circuitIds.length} interruptores abiertos y bloqueados${extra}.`,
+          `Candados cargados: ${circuitIds.length} interruptores abiertos y bloqueados${extra}. Se sincronizan en la nube.`,
         )
         closeCandadosMenu()
+        bumpPublishLocks()
       } catch {
         setSearchHint(
           'No se pudo leer el Excel de candados (col. D interruptor, L nº candado; CCM: cruzar D con N).',
@@ -532,8 +617,49 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
       }
       e.target.value = ''
     },
-    [closeCandadosMenu],
+    [closeCandadosMenu, searchableEquipment, bumpPublishLocks],
   )
+
+  const handleCircuitListExcelChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      e.target.value = ''
+      if (!file) return
+      if (!ALLOWED_LOCK_EXCEL_RE.test(file.name) || !file.size) {
+        setSearchHint('Archivo de lista de circuitos no válido (.xlsx / .xlsm).')
+        return
+      }
+      if (file.size > MAX_CIRCUIT_LIST_BYTES) {
+        setSearchHint(
+          `Excel demasiado grande (${Math.round(file.size / 1024 / 1024)} MiB). Máx. ${Math.round(
+            MAX_CIRCUIT_LIST_BYTES / 1024 / 1024,
+          )} MiB.`,
+        )
+        return
+      }
+      setTopologyBusy(true)
+      setSearchHint('Cargando lista de circuitos en el unifilar…')
+      try {
+        const buf = await file.arrayBuffer()
+        loadTopologyFromExcel(buf, file.name)
+        refreshEnergizationsForTopology(system690)
+      } catch (err) {
+        setSearchHint(
+          err instanceof Error
+            ? err.message
+            : 'No se pudo leer la lista de circuitos.',
+        )
+      } finally {
+        setTopologyBusy(false)
+      }
+    },
+    [],
+  )
+
+  const handleRestoreEmbeddedTopology = useCallback(() => {
+    resetTopologyToEmbedded()
+    refreshEnergizationsForTopology(system690)
+  }, [])
 
   const handleEnergizationExcelChange = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
@@ -630,10 +756,6 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     cascadeRef.current?.collapseAll()
   }
 
-  const isIos =
-    typeof navigator !== 'undefined' &&
-    /iPad|iPhone|iPod/.test(navigator.userAgent)
-
   const boardLayerOn = isBoardLayerVisible(energ)
 
   const shellClass = [
@@ -670,6 +792,12 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                 {system690.sourceFile
                   ? displaySourceFileName(system690.sourceFile)
                   : system690.vessel}
+                {topo.sessionOverride ? ' · sesión (no guardada)' : ''}
+                {energ.hasData
+                  ? energ.enabled
+                    ? ` · energizaciones activas (${vesselId})`
+                    : ` · energizaciones memorizadas (${vesselId}, capa off)`
+                  : ''}
               </p>
               <label className="topbar__vessel">
                 <span className="topbar__vessel-label">Buque</span>
@@ -741,7 +869,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                       setNotesPanelOpen(true)
                       if (isMobile) setChromeCollapsed(true)
                     }}
-                    title="Notas de revisión del buque (se sincronizan entre móviles con red)"
+                    title="Notas de revisión del buque (se sincronizan con red)"
                   >
                     Notas
                     {notes.reduce(
@@ -773,6 +901,14 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                   >
                     Usuario
                     {isAdmin ? ' · Admin' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => void signOutUser()}
+                    title="Cerrar sesión"
+                  >
+                    Salir
                   </button>
                 </div>
                 <div
@@ -859,10 +995,55 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                       hidden
                       onChange={handleLockExcelChange}
                     />
+                    </>
+                    )}
+                    {isAdmin && (
+                    <>
+                    <details className="candados-menu">
+                      <summary
+                        className={`btn${topo.sessionOverride ? ' btn--active' : ''}`}
+                        title="Cargar una nueva lista de circuitos en el unifilar (solo esta sesión; no se guarda) — solo admin"
+                      >
+                        {topologyBusy ? 'Cargando…' : 'Lista circuitos'}
+                      </summary>
+                      <div className="candados-menu__panel" role="menu">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="candados-menu__item"
+                          disabled={topologyBusy}
+                          title="Excel lista de circuitos (mismas columnas que el unifilar). Solo memoria de sesión."
+                          onClick={() => circuitListInputRef.current?.click()}
+                        >
+                          Cargar Excel…
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="candados-menu__item"
+                          disabled={!topo.sessionOverride || topologyBusy}
+                          title="Volver a la topología embebida en la app"
+                          onClick={handleRestoreEmbeddedTopology}
+                        >
+                          Restaurar embebida
+                        </button>
+                      </div>
+                    </details>
+                    <input
+                      ref={circuitListInputRef}
+                      type="file"
+                      accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                      hidden
+                      onChange={(e) => void handleCircuitListExcelChange(e)}
+                    />
+                    </>
+                    )}
+                    {isAdmin && (
+                    <>
                     <details className="candados-menu">
                       <summary
                         className={`btn${boardLayerOn ? ' btn--active' : ''}`}
-                        title="Capa de energizaciones a bordo — solo admin"
+                        title={`Capa de energizaciones de ${vesselId} (Excel col. A código, E SI/NO) — solo admin`}
                       >
                         Energizaciones
                       </summary>
@@ -872,6 +1053,13 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                           role="menuitem"
                           className={`candados-menu__item${boardLayerOn ? ' candados-menu__item--on' : ''}`}
                           disabled={!energ.hasData}
+                          title={
+                            energ.hasData
+                              ? boardLayerOn
+                                ? 'Ocultar capa (datos memorizados)'
+                                : 'Mostrar capa sobre el unifilar'
+                              : 'Carga un Excel primero'
+                          }
                           onClick={() =>
                             setBoardEnergizationsEnabled(!energ.enabled)
                           }
@@ -882,6 +1070,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                           type="button"
                           role="menuitem"
                           className="candados-menu__item"
+                          title="ControlSeguimientoEnergizaciones: A código cable, B origen, C destino, E SI/NO"
                           onClick={() => energizationInputRef.current?.click()}
                         >
                           Cargar Excel…
@@ -891,6 +1080,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                           role="menuitem"
                           className="candados-menu__item"
                           disabled={!energ.hasData}
+                          title="Borrar Excel memorizado y quitar la capa"
                           onClick={() => {
                             clearEnergizations()
                             setSearchHint('Energizaciones borradas.')
@@ -1086,33 +1276,6 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
           </div>
         </header>
 
-        {isMobile && showPwaHint && (
-          <div className="pwa-install" role="status">
-            <p className="pwa-install__text">
-              <strong>Instalar en el móvil</strong>
-              {installPrompt
-                ? ' — añade F110 DPS a la pantalla de inicio para usarla sin conexión.'
-                : isIos
-                  ? ' — en Safari: Compartir → «Añadir a pantalla de inicio».'
-                  : ' — en el menú del navegador: «Instalar aplicación» / «Añadir a pantalla de inicio».'}
-            </p>
-            <div className="pwa-install__actions">
-              {installPrompt && (
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={() => void handleInstallClick()}
-                >
-                  Instalar
-                </button>
-              )}
-              <button type="button" className="btn" onClick={dismissPwaHint}>
-                Entendido
-              </button>
-            </div>
-          </div>
-        )}
-
         {searchHint && <div className="banner">{searchHint}</div>}
         {lockTool !== 'none' && (
           <div className="banner banner--tool">
@@ -1208,10 +1371,8 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
           gens: {runningGenerators.size} en marcha · candados:{' '}
           {lockedCircuits.size} · flujo: {energizedCircuitIds.size} circ. · zoom{' '}
           {Math.round(zoom * 100)}% · {statusSource}
-          {isMobile ? ' · PWA' : ''}
         </span>
       </footer>
-      <PwaUpdateToast enabled={true} />
       {isMobile && chromeCollapsed && (
         <button
           type="button"
