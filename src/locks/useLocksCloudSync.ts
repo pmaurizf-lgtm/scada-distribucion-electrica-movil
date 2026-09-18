@@ -16,6 +16,7 @@ export type LocksSnapshot = {
   updatedAt: string
   lockedCircuits: string[]
   lockInfoByCircuit: Record<string, CircuitLockInfo>
+  fileName?: string | null
   source?: string
 }
 
@@ -54,6 +55,7 @@ export function useLocksCloudSync(
         updatedAt: local.updatedAt,
         lockedCircuits: local.lockedCircuits,
         lockInfoByCircuit: local.lockInfoByCircuit,
+        fileName: local.fileName ?? null,
         source: local.source,
       })
         .then(() => {
@@ -76,16 +78,38 @@ export function useLocksCloudSync(
       if (performance.now() < ignoreRemoteUntil.current) return
       const local = getLocalRef.current()
       const action = compareLocksLww(local.updatedAt, remote)
+      const pending = loadLocksPending(vesselId)
+
       if (action === 'adopt-remote' && remote) {
         applyRemoteRef.current({
           updatedAt: remote.updatedAt,
           lockedCircuits: remote.lockedCircuits,
           lockInfoByCircuit: remote.lockInfoByCircuit,
+          fileName: remote.fileName ?? null,
           source: remote.source,
         })
         saveLocksPending(vesselId, false)
-      } else if (action === 'push-local' || loadLocksPending(vesselId)) {
+        return
+      }
+
+      /*
+       * Solo empujar si hay pending (Excel/edición) o no hay remoto.
+       * Si el localStorage parece más nuevo sin pending, adoptar remoto:
+       * evita que el móvil pise la lista publicada desde escritorio.
+       */
+      if (pending || (action === 'push-local' && !remote)) {
         publishLocal(local)
+        return
+      }
+
+      if (remote && action === 'push-local' && !pending) {
+        applyRemoteRef.current({
+          updatedAt: remote.updatedAt,
+          lockedCircuits: remote.lockedCircuits,
+          lockInfoByCircuit: remote.lockInfoByCircuit,
+          fileName: remote.fileName ?? null,
+          source: remote.source,
+        })
       }
     }
 

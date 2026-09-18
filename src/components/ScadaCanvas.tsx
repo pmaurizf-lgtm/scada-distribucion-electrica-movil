@@ -140,11 +140,20 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const [lockInfoByCircuit, setLockInfoByCircuit] = useState<
     Record<string, CircuitLockInfo>
   >(() => ({ ...loadVesselLocks(vesselId).lockInfoByCircuit }))
-  const locksUpdatedAtRef = useRef(loadVesselLocks(vesselId).updatedAt)
+  const [locksFileName, setLocksFileName] = useState<string | null>(
+    () => loadVesselLocks(vesselId).fileName,
+  )
+  const [locksUpdatedAt, setLocksUpdatedAt] = useState(
+    () => loadVesselLocks(vesselId).updatedAt,
+  )
+  const locksUpdatedAtRef = useRef(locksUpdatedAt)
   const lockedCircuitsRef = useRef(lockedCircuits)
   const lockInfoRef = useRef(lockInfoByCircuit)
+  const locksFileNameRef = useRef(locksFileName)
   lockedCircuitsRef.current = lockedCircuits
   lockInfoRef.current = lockInfoByCircuit
+  locksFileNameRef.current = locksFileName
+  locksUpdatedAtRef.current = locksUpdatedAt
   const applyingLocksRemoteRef = useRef(false)
 
   const getLocksSnapshot = useCallback(
@@ -152,6 +161,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
       updatedAt: locksUpdatedAtRef.current,
       lockedCircuits: [...lockedCircuitsRef.current],
       lockInfoByCircuit: lockInfoRef.current,
+      fileName: locksFileNameRef.current,
     }),
     [],
   )
@@ -161,11 +171,14 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
       updatedAt: string
       lockedCircuits: string[]
       lockInfoByCircuit: Record<string, CircuitLockInfo>
+      fileName?: string | null
     }) => {
       applyingLocksRemoteRef.current = true
       locksUpdatedAtRef.current = remote.updatedAt
+      setLocksUpdatedAt(remote.updatedAt)
       setLockedCircuits(new Set(remote.lockedCircuits))
       setLockInfoByCircuit({ ...remote.lockInfoByCircuit })
+      setLocksFileName(remote.fileName ?? null)
       setProtectionStatus((prev) =>
         applyLocksToProtectionStatus(prev, remote.lockedCircuits),
       )
@@ -173,6 +186,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
         lockedCircuits: remote.lockedCircuits,
         lockInfoByCircuit: remote.lockInfoByCircuit,
         updatedAt: remote.updatedAt,
+        fileName: remote.fileName ?? null,
       })
       setStatusSource(
         locksStatusLine(vesselId, remote.lockedCircuits.length) +
@@ -189,19 +203,26 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   )
   useEnergizationsCloudSync(vesselId)
 
-  const bumpPublishLocks = useCallback(() => {
+  const bumpPublishLocks = useCallback((fileName?: string | null) => {
+    if (fileName !== undefined) {
+      setLocksFileName(fileName)
+      locksFileNameRef.current = fileName
+    }
     locksUpdatedAtRef.current = new Date().toISOString()
+    setLocksUpdatedAt(locksUpdatedAtRef.current)
     window.setTimeout(() => {
       saveVesselLocks(vesselId, {
         lockedCircuits: lockedCircuitsRef.current,
         lockInfoByCircuit: lockInfoRef.current,
         updatedAt: locksUpdatedAtRef.current,
+        fileName: locksFileNameRef.current,
       })
       publishLocks({
         updatedAt: locksUpdatedAtRef.current,
         lockedCircuits: [...lockedCircuitsRef.current],
         lockInfoByCircuit: lockInfoRef.current,
-        source: 'local',
+        fileName: locksFileNameRef.current,
+        source: fileName ? 'excel' : 'local',
       })
     }, 0)
   }, [publishLocks, vesselId])
@@ -298,8 +319,9 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
       lockedCircuits,
       lockInfoByCircuit,
       updatedAt: locksUpdatedAtRef.current,
+      fileName: locksFileName,
     })
-  }, [vesselId, lockedCircuits, lockInfoByCircuit])
+  }, [vesselId, lockedCircuits, lockInfoByCircuit, locksFileName])
 
   const switchVessel = useCallback(
     (next: VesselId) => {
@@ -308,11 +330,14 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
         lockedCircuits,
         lockInfoByCircuit,
         updatedAt: locksUpdatedAtRef.current,
+        fileName: locksFileName,
       })
       const loaded = loadVesselLocks(next)
       locksUpdatedAtRef.current = loaded.updatedAt
+      setLocksUpdatedAt(loaded.updatedAt)
       setLockedCircuits(new Set(loaded.lockedCircuits))
       setLockInfoByCircuit({ ...loaded.lockInfoByCircuit })
+      setLocksFileName(loaded.fileName)
       setProtectionStatus((prev) =>
         withLocksOpen(prev, loaded.lockedCircuits),
       )
@@ -322,7 +347,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
       )
       onVesselChange(next)
     },
-    [vesselId, lockedCircuits, lockInfoByCircuit, onVesselChange],
+    [vesselId, lockedCircuits, lockInfoByCircuit, locksFileName, onVesselChange],
   )
 
   const searchableEquipment = useMemo(
@@ -374,13 +399,16 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     setRunningGenerators(new Set())
     setLockedCircuits(new Set(defaults.lockedCircuits))
     setLockInfoByCircuit({ ...defaults.lockInfoByCircuit })
+    setLocksFileName(defaults.fileName)
     setLockBalloon(null)
     setLockTool('none')
     setStatusSource(locksStatusLine(vesselId, defaults.lockedCircuits.length))
     locksUpdatedAtRef.current = new Date().toISOString()
+    setLocksUpdatedAt(locksUpdatedAtRef.current)
     saveVesselLocks(vesselId, {
       ...defaults,
       updatedAt: locksUpdatedAtRef.current,
+      fileName: defaults.fileName,
     })
     clearPersistedSim()
     window.setTimeout(() => {
@@ -388,6 +416,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
         updatedAt: locksUpdatedAtRef.current,
         lockedCircuits: defaults.lockedCircuits,
         lockInfoByCircuit: defaults.lockInfoByCircuit,
+        fileName: defaults.fileName,
         source: 'reset',
       })
     }, 0)
@@ -557,7 +586,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
             `Candados cargados: ${circuitIds.length} interruptores (nº LOTO en col. L)${extra}. Pulsa el candado para ver el número. Se sincronizan en la nube.`,
           )
           closeCandadosMenu()
-          bumpPublishLocks()
+          bumpPublishLocks(file.name)
           return
         }
 
@@ -609,7 +638,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
           `Candados cargados: ${circuitIds.length} interruptores abiertos y bloqueados${extra}. Se sincronizan en la nube.`,
         )
         closeCandadosMenu()
-        bumpPublishLocks()
+        bumpPublishLocks(file.name)
       } catch {
         setSearchHint(
           'No se pudo leer el Excel de candados (col. D interruptor, L nº candado; CCM: cruzar D con N).',
@@ -941,6 +970,30 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                         Candados
                       </summary>
                       <div className="candados-menu__panel" role="menu">
+                        <p className="candados-menu__meta" title={locksFileName ?? undefined}>
+                          {locksFileName
+                            ? `Archivo: ${locksFileName}`
+                            : 'Archivo: (ningún Excel cargado)'}
+                          {locksUpdatedAt > '1970-01-01T00:00:00.000Z' && (
+                            <>
+                              <br />
+                              <span className="candados-menu__meta-time">
+                                Actualizado:{' '}
+                                {new Date(locksUpdatedAt).toLocaleString(
+                                  'es-ES',
+                                  {
+                                    dateStyle: 'short',
+                                    timeStyle: 'short',
+                                  },
+                                )}
+                              </span>
+                            </>
+                          )}
+                          <br />
+                          <span className="candados-menu__meta-count">
+                            {lockedCircuits.size} interruptores con candado
+                          </span>
+                        </p>
                         <button
                           type="button"
                           role="menuitem"

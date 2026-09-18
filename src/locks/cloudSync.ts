@@ -15,6 +15,8 @@ export type LocksCloudPayload = {
   updatedAt: string
   lockedCircuits: string[]
   lockInfoByCircuit: Record<string, CircuitLockInfo>
+  /** Nombre del Excel / origen de la lista LOTO */
+  fileName?: string | null
   source?: string
 }
 
@@ -60,6 +62,10 @@ export function parseLocksCloudPayload(
     updatedAt: raw.updatedAt,
     lockedCircuits,
     lockInfoByCircuit,
+    fileName:
+      typeof raw.fileName === 'string' && raw.fileName.trim()
+        ? raw.fileName.trim()
+        : null,
     source: typeof raw.source === 'string' ? raw.source : undefined,
   }
 }
@@ -82,6 +88,7 @@ export async function pushLocksState(payload: LocksCloudPayload): Promise<void> 
     updatedAt: payload.updatedAt,
     lockedCircuits: payload.lockedCircuits,
     lockInfoByCircuit: payload.lockInfoByCircuit,
+    fileName: payload.fileName ?? null,
     source: payload.source ?? null,
   })
 }

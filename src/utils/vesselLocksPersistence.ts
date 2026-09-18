@@ -18,6 +18,8 @@ export type PersistedVesselLocks = {
   lockInfoByCircuit: Record<string, CircuitLockInfo>
   /** ISO · LWW cloud / local */
   updatedAt: string
+  /** Nombre del Excel LOTO cargado (si aplica). */
+  fileName?: string | null
   /** @deprecated alias de updatedAt en lecturas antiguas */
   savedAt?: string
 }
@@ -30,6 +32,7 @@ export function defaultLocksForVessel(vesselId: VesselId): {
   lockedCircuits: string[]
   lockInfoByCircuit: Record<string, CircuitLockInfo>
   updatedAt: string
+  fileName: string | null
 } {
   /** Epoch bajo: un remoto en la nube siempre gana al seed local. */
   const updatedAt = '1970-01-01T00:00:00.000Z'
@@ -38,15 +41,22 @@ export function defaultLocksForVessel(vesselId: VesselId): {
       lockedCircuits: Object.keys(SEED_LOCKS),
       lockInfoByCircuit: { ...SEED_LOCKS },
       updatedAt,
+      fileName: 'lockList.json (seed F-111)',
     }
   }
-  return { lockedCircuits: [], lockInfoByCircuit: {}, updatedAt }
+  return {
+    lockedCircuits: [],
+    lockInfoByCircuit: {},
+    updatedAt,
+    fileName: null,
+  }
 }
 
 export function loadVesselLocks(vesselId: VesselId): {
   lockedCircuits: string[]
   lockInfoByCircuit: Record<string, CircuitLockInfo>
   updatedAt: string
+  fileName: string | null
 } {
   try {
     const raw = localStorage.getItem(storageKey(vesselId))
@@ -64,10 +74,15 @@ export function loadVesselLocks(vesselId: VesselId): {
       (typeof parsed.updatedAt === 'string' && parsed.updatedAt) ||
       (typeof parsed.savedAt === 'string' && parsed.savedAt) ||
       '1970-01-01T00:00:00.000Z'
+    const fileName =
+      typeof parsed.fileName === 'string' && parsed.fileName.trim()
+        ? parsed.fileName.trim()
+        : null
     return {
       lockedCircuits: parsed.lockedCircuits,
       lockInfoByCircuit: { ...parsed.lockInfoByCircuit },
       updatedAt,
+      fileName,
     }
   } catch {
     return defaultLocksForVessel(vesselId)
@@ -81,6 +96,7 @@ export function saveVesselLocks(
     lockInfoByCircuit: Record<string, CircuitLockInfo>
     /** Si se omite, se usa ahora (mutación local). */
     updatedAt?: string
+    fileName?: string | null
   },
 ): string {
   const updatedAt = data.updatedAt ?? new Date().toISOString()
@@ -94,6 +110,12 @@ export function saveVesselLocks(
       lockInfoByCircuit: { ...data.lockInfoByCircuit },
       updatedAt,
       savedAt: updatedAt,
+      fileName: data.fileName === undefined ? undefined : data.fileName,
+    }
+    // Si fileName no viene, conservar el anterior
+    if (data.fileName === undefined) {
+      const prev = loadVesselLocks(vesselId)
+      payload.fileName = prev.fileName
     }
     localStorage.setItem(storageKey(vesselId), JSON.stringify(payload))
   } catch {
