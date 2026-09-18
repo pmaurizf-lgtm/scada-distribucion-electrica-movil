@@ -57,6 +57,7 @@ export function EquipmentBalloon({
       const el = anchorRef.current
       if (!el) return
       const r = el.getBoundingClientRect()
+      if (r.width < 1 && r.height < 1) return
       const margin = 12
       const halfW = 140
       const preferAboveH = 200
@@ -74,14 +75,21 @@ export function EquipmentBalloon({
     }
 
     update()
+    const raf1 = window.requestAnimationFrame(() => {
+      update()
+      window.requestAnimationFrame(update)
+    })
     const stage = anchorRef.current?.closest('.casc__stage--pan')
     stage?.addEventListener('scroll', update, { passive: true })
     window.addEventListener('resize', update)
     window.addEventListener('scroll', update, true)
+    window.addEventListener('wheel', update, { passive: true, capture: true })
     return () => {
+      window.cancelAnimationFrame(raf1)
       stage?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update, true)
+      window.removeEventListener('wheel', update, true)
     }
   }, [anchorRef, equipment.id, asSheet])
 

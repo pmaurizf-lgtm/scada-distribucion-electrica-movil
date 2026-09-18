@@ -1,4 +1,4 @@
-Ôªø@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
 :root {
   --bg: #0e1614;
@@ -12,7 +12,7 @@
   --line-normal: #e6c200;
   --line-alt: #3b82f6;
   --line-aux: #e8958b;
-  /* Cable en reposo (sin circulaci√≥n) vs energizado */
+  /* Cable en reposo (sin circulaciÛn) vs energizado */
   --wire-idle: #5c6e68;
   --wire-idle-alt: #4a5f7a;
   --wire-idle-aux: #6b5a56;
@@ -29,7 +29,7 @@
   --radius: 6px;
   --font: 'IBM Plex Sans', system-ui, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
-  /* Unifilar: jerarqu√≠a de trazos */
+  /* Unifilar: jerarquÌa de trazos */
   --wire-rail: 4px;
   --wire-main: 2.5px;
   --wire-drop: 2px;
@@ -41,7 +41,7 @@
   --wire-flow-blob: 1.15rem;
   --wire-flow-blob-sm: 0.85rem;
   --zoom: 1;
-  /* Flujo animado por tensi√≥n (cable + part√≠cula + halo RGB) */
+  /* Flujo animado por tensiÛn (cable + partÌcula + halo RGB) */
   --v690-wire: #4ade80;
   --v690-particle: #bbf7d0;
   --v690-glow-rgb: 74, 222, 128;
@@ -64,7 +64,7 @@
   --valum-wire: #f0f0f0;
   --valum-particle: #ffffff;
   --valum-glow-rgb: 240, 240, 240;
-  /* Activo en el sub√°rbol (cada zona lo redefine) */
+  /* Activo en el sub·rbol (cada zona lo redefine) */
   --flow-wire: var(--v230-wire);
   --flow-particle: var(--v230-particle);
   --flow-glow-rgb: var(--v230-glow-rgb);
@@ -91,7 +91,7 @@ body {
 }
 
 /*
- * Alcance de tensi√≥n: --flow-* se heredan en cables y part√≠culas del sub√°rbol.
+ * Alcance de tensiÛn: --flow-* se heredan en cables y partÌculas del sub·rbol.
  * Por defecto 690 V en planta MSB; cada equipo redefine con data-flow-v (PUMA/DCP-10).
  */
 .plant-msb,
@@ -143,7 +143,7 @@ body {
   --flow-glow-rgb: var(--valum-glow-rgb);
 }
 
-/* Stubs TRF‚ÜíQVS dual: tensi√≥n fija por ramal */
+/* Stubs TRF?QVS dual: tensiÛn fija por ramal */
 .hbus-drop__trf-stub--230 {
   --flow-wire: var(--v230-wire);
   --flow-particle: var(--v230-particle);
@@ -157,7 +157,7 @@ body {
 }
 
 /*
- * Piernas de acometida: color unificado por tensi√≥n (data-flow-v en cada pierna).
+ * Piernas de acometida: color unificado por tensiÛn (data-flow-v en cada pierna).
  * Sustituye el criterio NORM=amarillo / ALT=azul en cables y carteles.
  */
 .hbus-drop__leg[data-flow-v] {
@@ -482,7 +482,7 @@ body {
   min-width: 18rem;
 }
 
-/* Rama 440 ‚Üí Q09 ‚Üí TRF ‚Üí Q50 ‚Üí 115, colgando de la barra 440 */
+/* Rama 440 ? Q09 ? TRF ? Q50 ? 115, colgando de la barra 440 */
 .msb4sfs-trf115 {
   display: flex;
   flex-direction: column;
@@ -576,7 +576,7 @@ body {
 
 /*
  * Q50 va flush (sin stub from-feed de Q00). Misma altura de cabecera
- * que la secci√≥n 440 para que la pata Q51 = Q01.
+ * que la secciÛn 440 para que la pata Q51 = Q01.
  */
 .msb4sfs-rack--nested-trf .msb4sfs-rack__inner-top {
   height: 5rem;
@@ -594,7 +594,7 @@ body {
 
 /*
  * Secciones 440 / 115 dentro del mismo chasis: sin recuadro propio
- * (el MSB-4SFS es un √∫nico equipo).
+ * (el MSB-4SFS es un ˙nico equipo).
  */
 .msb4sfs-rack {
   --msb4sfs-rail-h: 1.15rem;
@@ -688,7 +688,7 @@ body {
   height: 0.45rem;
 }
 
-/* Reserva de altura bajo TRF‚ÜíQ50: sin pintar cable (ya viene del stem). */
+/* Reserva de altura bajo TRF?Q50: sin pintar cable (ya viene del stem). */
 .msb4sfs-rack__vwire--spacer {
   background: transparent !important;
   visibility: hidden;
@@ -890,7 +890,7 @@ body {
   z-index: 1;
 }
 
-/* Sin recuadro interno: el MSB-4SFS es un √∫nico chasis */
+/* Sin recuadro interno: el MSB-4SFS es un ˙nico chasis */
 .msb4sfs-rack__drops.hbus--nested {
   margin-top: 0;
   padding: 0 0.25rem 0.2rem;
@@ -950,7 +950,7 @@ body {
   width: auto;
   flex-shrink: 0;
   object-fit: contain;
-  /* Asset oficial en azul corporativo ‚Üí blanco sobre topbar oscuro */
+  /* Asset oficial en azul corporativo ? blanco sobre topbar oscuro */
   filter: brightness(0) invert(1);
 }
 
@@ -1094,8 +1094,8 @@ body {
   padding: 1.5rem;
 }
 
-/* Vista √°rbol: caja w√óh√ózoom + padding JS para centrar (sin min 100%:
-   si no, el √°rbol queda pegado a la izquierda del viewport). */
+/* Vista ·rbol: caja w◊h◊zoom + padding JS para centrar (sin min 100%:
+   si no, el ·rbol queda pegado a la izquierda del viewport). */
 .plant-zoom-space--focus {
   display: block;
   position: relative;
@@ -1595,7 +1595,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   color: #3d8a7a;
 }
 
-/* Globo de equipo al hover ‚Äî portal fixed por encima de todo el unifilar */
+/* Globo de equipo al hover ó portal fixed por encima de todo el unifilar */
 .equip-balloon {
   display: flex;
   flex-direction: column;
@@ -2132,7 +2132,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * Cuadros abiertos (MSB-4SFS / LCS / SSB): un solo marco (el del chasis).
- * El ::after del drop envolver√≠a todo el equipo abierto ‚Üí doble marco.
+ * El ::after del drop envolverÌa todo el equipo abierto ? doble marco.
  */
 .hbus-drop--msb4sfs-open.hbus-drop--locate::after,
 .hbus-drop--lcs-open.hbus-drop--locate::after,
@@ -2143,8 +2143,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Leaf / JBX¬∑SKT: el halo va en la tarjeta (`.hbus-drop__eq-wrap`), no en todo
- * el drop (cables + hijos). As√≠ no lo recorta el overflow de patas JBX y se ve entero.
+ * Leaf / JBX∑SKT: el halo va en la tarjeta (`.hbus-drop__eq-wrap`), no en todo
+ * el drop (cables + hijos). AsÌ no lo recorta el overflow de patas JBX y se ve entero.
  */
 .hbus-drop--locate:not(.hbus-drop--ssb-open):not(.hbus-drop--lcs-open):not(
     .hbus-drop--msb4sfs-open
@@ -2273,7 +2273,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   scrollbar-width: none;
   -ms-overflow-style: none;
   user-select: none;
-  /* √Årea completa arrastrable, aunque el diagrama no ocupe todo */
+  /* ¡rea completa arrastrable, aunque el diagrama no ocupe todo */
   touch-action: none;
 }
 
@@ -2491,7 +2491,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background: #b24ec4;
 }
 
-/* QG dentro del cuadro: cable gen ‚Üí QG ‚Üí barra */
+/* QG dentro del cuadro: cable gen ? QG ? barra */
 .plant-msb__inner-top {
   position: relative;
   /* Por encima del rail: la bajante QT/QG no queda tapada por la barra */
@@ -2537,7 +2537,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 .plant-msb__vwire--to-rail {
   /* Llega al borde inferior de inner-top = inicio de la barra (top: 0).
-   * Debe poder encogerse si el chip (p. ej. con candado) ocupa m√°s altura. */
+   * Debe poder encogerse si el chip (p. ej. con candado) ocupa m·s altura. */
   flex: 1 1 0;
   min-height: 0.35rem;
   height: auto;
@@ -2583,13 +2583,13 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * Candado QT* / QG* (arriba de barra MSB): en el flujo del chip compacto
- * (s√≠mbolo ‚Üí candado ‚Üí nombre), igual que el resto de interruptores.
+ * (sÌmbolo ? candado ? nombre), igual que el resto de interruptores.
  * No usar position:absolute en esquina: las patas flex (.bustie-down /
  * .vwire--to-rail) absorben la altura extra sin atravesar 1SB/1SA.
  */
 .plant-msb__bustie:has(.casc-brk--locked) .plant-msb__bustie-down,
 .plant-msb__qg-slot:has(.casc-brk--locked) .plant-msb__vwire--to-rail {
-  /* Tramo visible chip ‚Üí barra; no aplastar bajo el m√≠nimo */
+  /* Tramo visible chip ? barra; no aplastar bajo el mÌnimo */
   flex: 1 1 auto;
   flex-shrink: 0;
   min-height: 1.05rem;
@@ -2653,7 +2653,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 .plant-rack {
-  /* Distancia vertical barra ‚Üí inicio de salidas (bajantes --from-bus) */
+  /* Distancia vertical barra ? inicio de salidas (bajantes --from-bus) */
   --rail-label-h: 2.55rem;
   position: relative;
   padding: 0.15rem 0.75rem 0.85rem;
@@ -2715,7 +2715,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * Barras horizontales: fila densa de puntos (repeat-x) que avanzan.
- * ::before y ::after desfasados ‚âà doble densidad visual.
+ * ::before y ::after desfasados ò doble densidad visual.
  */
 .plant-rack__rail-seg--live::before,
 .plant-rack__rail-seg--live::after,
@@ -2872,8 +2872,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Hueco entre MSB; la interconexi√≥n 2SA‚Üî1SB (QT2A‚ÜîQT1B) la dibuja .plant__tie-svg
- * midiendo la posici√≥n real de cada interruptor.
+ * Hueco entre MSB; la interconexiÛn 2SA?1SB (QT2A?QT1B) la dibuja .plant__tie-svg
+ * midiendo la posiciÛn real de cada interruptor.
  */
 .plant__bridge-gap {
   flex: 0 0 4.5rem;
@@ -2948,7 +2948,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   font-size: 0.68rem;
   cursor: pointer;
   flex-shrink: 0;
-  /* Por encima del r√≥tulo del chasis (z 7) para el globo de protecci√≥n */
+  /* Por encima del rÛtulo del chasis (z 7) para el globo de protecciÛn */
   position: relative;
   z-index: 8;
   isolation: isolate;
@@ -3040,7 +3040,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   animation: brk-flow-pulse 1.8s ease-in-out infinite;
 }
 
-/* Capa ¬´energizaciones a bordo¬ª (Excel admin) */
+/* Capa ´energizaciones a bordoª (Excel admin) */
 .hbus-drop__leg--board-dead[data-flow-v] .hbus-drop__wire,
 .hbus-drop__leg--board-dead[data-flow-v] .hbus-drop__free-end {
   background: color-mix(in srgb, var(--flow-wire) 22%, #4a5258) !important;
@@ -3112,7 +3112,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   box-shadow: 0 0 6px color-mix(in srgb, var(--flow-wire, #e6c200) 28%, transparent);
 }
 
-/* Capa energizaciones: anula brillo de simulaci√≥n; solo resaltan los SI del Excel */
+/* Capa energizaciones: anula brillo de simulaciÛn; solo resaltan los SI del Excel */
 .scada--board-energizations .equip-chassis--live:not(.equip-chassis--board-live),
 .scada--board-energizations .hbus-drop__eq--live:not(.hbus-drop__eq--board-live) {
   border-color: var(--border);
@@ -3215,7 +3215,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 .hbus-drop__free-end {
   /*
-   * Alimentaci√≥n del otro cuadro: stub horizontal libre (no une a la barra local)
+   * AlimentaciÛn del otro cuadro: stub horizontal libre (no une a la barra local)
    * + tramo vertical hasta el interruptor.
    */
   position: relative;
@@ -3301,7 +3301,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   min-height: 0.85rem;
 }
 
-/* Por defecto (salidas hbus): stub m√≠nimo sobre el interruptor */
+/* Por defecto (salidas hbus): stub mÌnimo sobre el interruptor */
 .hbus-drop__wire--from-bus {
   margin-top: 0;
   min-height: 0.35rem;
@@ -3368,7 +3368,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background: var(--line-normal);
 }
 
-/* Tensi√≥n hasta el chip si el origen est√° vivo pero el interruptor no conduce */
+/* TensiÛn hasta el chip si el origen est· vivo pero el interruptor no conduce */
 .hbus-drop__leg--from-live:not(.hbus-drop__leg--flow):not([data-flow-v]) .hbus-drop__wire--from-bus {
   background: var(--line-normal);
 }
@@ -3380,7 +3380,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 .hbus-drop__tag {
   position: absolute;
   left: calc(50% + 5px);
-  /* Junto al tramo mid, a la derecha del cable; un poco m√°s abajo para no tapar el chip */
+  /* Junto al tramo mid, a la derecha del cable; un poco m·s abajo para no tapar el chip */
   top: auto;
   bottom: calc(0.55rem + 0.05rem);
   font-family: var(--mono);
@@ -3423,7 +3423,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 .hbus-drop__leg--aux {
-  /* Cartel ¬´AUX 24 V¬ª m√°s largo que NORM/ALT */
+  /* Cartel ´AUX 24 Vª m·s largo que NORM/ALT */
   width: 4.2rem;
   min-width: 4.2rem;
 }
@@ -3516,8 +3516,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Cadena FIU‚ÜíTRF‚Üícarga (MSB-4SFS) y SBT‚ÜíSCV‚ÜíMSB (planta 690 V):
- * bajante s√≥lido del padre hasta el hijo link-only.
+ * Cadena FIU?TRF?carga (MSB-4SFS) y SBT?SCV?MSB (planta 690 V):
+ * bajante sÛlido del padre hasta el hijo link-only.
  */
 .hbus-drop--chain-open > .hbus--chain-link.hbus--direct,
 .hbus-drop.hbus-drop--chain-open:has(.hbus-drop--link-only)
@@ -3569,7 +3569,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   box-shadow: 0 0 6px rgba(var(--flow-glow-rgb), 0.35);
 }
 
-/* Evitar doble trazo tenue a trav√©s del texto del padre en esta cadena */
+/* Evitar doble trazo tenue a travÈs del texto del padre en esta cadena */
 .hbus-drop.hbus-drop--chain-open:has(> .hbus--chain-link)
   > .hbus-drop__eq-row
   > .hbus-drop__eq-wrap
@@ -3616,7 +3616,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * Cajas JBX anidadas (varios hijos link-only bajo un padre chain-open):
- * - alargar patas hasta el borde inferior del padre (el 0.85rem anterior no cubr√≠a el padding 1.35rem);
+ * - alargar patas hasta el borde inferior del padre (el 0.85rem anterior no cubrÌa el padding 1.35rem);
  * - ocultar el trazo gris central (::before del recuadro) que sobraba hacia abajo.
  */
 .hbus-drop.hbus-drop--chain-open:has(> .hbus--chain-link .hbus-drop--link-only)
@@ -3653,7 +3653,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 /*
  * Stub central del padre (.hbus--chain-link::before): sobra siempre que el hijo
  * link-only ya pinta la pata con .hbus-drop__wire--thru (1 o N hijos).
- * Si ambos se dibujan, en ABT‚ÜíTRF aparece un trazo fantasma sobre el borde del TRF.
+ * Si ambos se dibujan, en ABT?TRF aparece un trazo fantasma sobre el borde del TRF.
  */
 .hbus-drop.hbus-drop--chain-open:has(> .hbus--chain-link .hbus-drop--link-only)
   > .hbus--chain-link::before {
@@ -3674,7 +3674,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   margin-bottom: -2px;
 }
 
-/* TRF‚ÜíSSB (S01 interno): pata continua hasta el borde del chasis / INS */
+/* TRF?SSB (S01 interno): pata continua hasta el borde del chasis / INS */
 .hbus-drop--fam-trf.hbus-drop--chain-open:has(.hbus-drop__trf-inbrk)
   > .hbus--chain-link
   .hbus-drop--ssb-open.hbus-drop--link-only
@@ -3725,7 +3725,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /* AUX del MSB: encima del marco, en el lado opuesto al bus-tie (QT*),
- * para no solaparse con la interconexi√≥n. Absolute: no se intercala entre gens y caja. */
+ * para no solaparse con la interconexiÛn. Absolute: no se intercala entre gens y caja. */
 .plant-msb__aux-tops {
   position: absolute;
   top: auto;
@@ -3783,7 +3783,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   z-index: 1;
 }
 
-/* Flujo: cable vivo + halo de tensi√≥n (doble part√≠cula vertical) */
+/* Flujo: cable vivo + halo de tensiÛn (doble partÌcula vertical) */
 .hbus-drop__leg--flow .hbus-drop__wire,
 .hbus-drop__wire--flow {
   background-image: none;
@@ -3824,7 +3824,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   height: 24%;
 }
 
-/* Aguas abajo de interruptor abierto: nunca part√≠culas (gana a reglas --flow) */
+/* Aguas abajo de interruptor abierto: nunca partÌculas (gana a reglas --flow) */
 .hbus-drop__leg--open .hbus-drop__wire--mid::before,
 .hbus-drop__leg--open .hbus-drop__wire--mid::after,
 .hbus-drop__leg--open .hbus-drop__wire--to-eq::before,
@@ -3845,7 +3845,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background-image: none;
 }
 
-/* Interruptor abierto: sin circulaci√≥n aguas abajo del chip (color tensi√≥n atenuado si hay data-flow-v) */
+/* Interruptor abierto: sin circulaciÛn aguas abajo del chip (color tensiÛn atenuado si hay data-flow-v) */
 .hbus-drop__leg--open:not([data-flow-v]) .hbus-drop__wire--mid,
 .hbus-drop__leg--open:not([data-flow-v]) .hbus-drop__wire--to-eq {
   background: #4a5c56;
@@ -3862,7 +3862,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   display: none;
 }
 
-/* Tensi√≥n hasta el interruptor abierto si el origen/barra est√° vivo */
+/* TensiÛn hasta el interruptor abierto si el origen/barra est· vivo */
 .hbus-drop__leg--open.hbus-drop__leg--from-live .hbus-drop__wire--from-bus {
   background: var(--flow-wire);
   opacity: 0.95;
@@ -3990,7 +3990,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   }
 }
 
-/* Empalmes cable‚Üîequipo / cable‚Üîbarra: solape fijo (sin hueco negro) */
+/* Empalmes cable?equipo / cable?barra: solape fijo (sin hueco negro) */
 .hbus-drop__wire--to-eq,
 .hbus-drop__wire--mid,
 .lcs440-rail__qvs-leg__wire--to-bus,
@@ -4016,7 +4016,23 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 .hbus-drop__eq-wrap {
   position: relative;
   width: 100%;
-  z-index: 6;
+  z-index: 8;
+  pointer-events: auto;
+}
+
+/*
+ * Los cables de acometida solapan el recuadro (margin negativo) y robaban el
+ * hover: el globo solo acababa arm·ndose tras zoom/scroll. El Q sigue clicable.
+ */
+.hbus-drop__tops .hbus-drop__wire,
+.hbus-drop__tops .hbus-drop__free-end,
+.hbus-drop__leg .hbus-drop__wire,
+.hbus-drop__leg .hbus-drop__free-end {
+  pointer-events: none;
+}
+
+.hbus-drop__leg .casc-brk,
+.hbus-drop__tops .casc-brk {
   pointer-events: auto;
 }
 
@@ -4162,7 +4178,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   margin-top: 0;
 }
 
-/* Cadena ABT/TRF/LCS: sin barra horizontal ¬´salidas¬ª; cable vertical continuo */
+/* Cadena ABT/TRF/LCS: sin barra horizontal ´salidasª; cable vertical continuo */
 .hbus--direct {
   border: none;
   background: transparent;
@@ -4193,8 +4209,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * TRF ‚Üí LCS plegado (solo .fam-trf; NO el ABT padre ‚Äî :has(.fam-lcs) tambi√©n
- * matcheaba ABT y cortaba ABT‚ÜíTRF).
+ * TRF ? LCS plegado (solo .fam-trf; NO el ABT padre ó :has(.fam-lcs) tambiÈn
+ * matcheaba ABT y cortaba ABT?TRF).
  * Sin stub central del TRF; piernas QVS cortas hasta el borde del recuadro.
  */
 .hbus-drop--fam-trf.hbus-drop--chain-open:has(
@@ -4363,8 +4379,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * LCS desplegado + cadena ABT‚ÜíTRF.
- * --feed-col: eje vertical com√∫n centrado bajo el recuadro ABT/TRF.
+ * LCS desplegado + cadena ABT?TRF.
+ * --feed-col: eje vertical com˙n centrado bajo el recuadro ABT/TRF.
  */
 .hbus-drop--lcs-open {
   display: flex;
@@ -4373,7 +4389,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   width: max-content;
   max-width: none;
   --lcs-vs-col: 7.2rem;
-  /* --feed-col lo hereda de ABT/TRF (7.2 o 7.6 dual); no pisarlo aqu√≠ */
+  /* --feed-col lo hereda de ABT/TRF (7.2 o 7.6 dual); no pisarlo aquÌ */
 }
 
 .hbus-drop.hbus-drop--chain-open:has(.hbus-drop--lcs-open) {
@@ -4397,7 +4413,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * TRF (LCS abierto): ancho = vano VS 230+440 (--feed-col), sin la extensi√≥n CSB.
+ * TRF (LCS abierto): ancho = vano VS 230+440 (--feed-col), sin la extensiÛn CSB.
  * DOM real: .hbus-drop > .eq-row > .eq-wrap (no .eq-wrap directo).
  */
 .hbus-drop.hbus-drop--feeds-lcs-open > .hbus-drop__tops,
@@ -4451,7 +4467,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   box-sizing: border-box;
 }
 
-/* Continuidad ABT‚ÜíTRF: hueco visible + thru √∫nico que lo cruza */
+/* Continuidad ABT?TRF: hueco visible + thru ˙nico que lo cruza */
 .hbus-drop.hbus-drop--chain-open:has(.hbus-drop--link-only):has(
     .hbus-drop--lcs-open
   )
@@ -4497,8 +4513,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * ABT ‚Üí hijo (SSB/TRF/carga) sin interruptor:
- * hueco entre recuadros + thru del hijo que lo cruza (part√≠culas de bajante).
+ * ABT ? hijo (SSB/TRF/carga) sin interruptor:
+ * hueco entre recuadros + thru del hijo que lo cruza (partÌculas de bajante).
  */
 .hbus-drop.hbus-drop--chain-open:has(.hbus-drop--link-only) > .hbus--direct {
   margin-top: 0;
@@ -4529,7 +4545,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * JBX / cadena multi-hijo: no trazo central gris a trav√©s del recuadro ni
+ * JBX / cadena multi-hijo: no trazo central gris a travÈs del recuadro ni
  * stub bajo el padre; cada hijo lleva su pata amarilla hasta el borde.
  */
 .hbus-drop.hbus-drop--chain-open:has(> .hbus--chain-link .hbus-drop--link-only)
@@ -4588,7 +4604,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   overflow: hidden;
 }
 
-/* TRF‚ÜíLCS dual: las bajantes QVS sobresalen del recuadro TRF ‚Äî no recortarlas */
+/* TRF?LCS dual: las bajantes QVS sobresalen del recuadro TRF ó no recortarlas */
 .hbus-drop.hbus-drop--chain-open:has(> .hbus--chain-link .hbus-drop--feeds-lcs-open)
   > .hbus--chain-link.hbus--direct {
   overflow: visible;
@@ -4715,7 +4731,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * TRF dual (230+440): bajantes reales (.hbus-drop__trf-stub), no ::before/::after.
- * As√≠ usan las mismas part√≠culas que el resto de cables.
+ * AsÌ usan las mismas partÌculas que el resto de cables.
  */
 .hbus-drop__trf-stub {
   display: none;
@@ -4723,7 +4739,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * Solo el TRF que alimenta el LCS abierto (hijo directo del drop), nunca TRFs
- * anidados aguas abajo ‚Äî evita bajantes hu√©rfanas con --trf-out-* heredadas.
+ * anidados aguas abajo ó evita bajantes huÈrfanas con --trf-out-* heredadas.
  */
 .hbus-drop.hbus-drop--feeds-lcs-open.hbus-drop--dual-feed
   > .hbus-drop__eq-wrap
@@ -4793,7 +4809,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background: #e6c200;
 }
 
-/* Part√≠culas id√©nticas a bajantes (doble halo) */
+/* PartÌculas idÈnticas a bajantes (doble halo) */
 .hbus-drop.hbus-drop--feeds-lcs-open.hbus-drop--dual-feed.hbus-drop--flow
   > .hbus-drop__eq-wrap
   > .hbus-drop__eq
@@ -4955,8 +4971,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Dual TRF‚ÜíQVS: un solo cable (stub del TRF). El wire--from del QVS se anula
- * para no crear un segundo tramo desalinhado (escal√≥n).
+ * Dual TRF?QVS: un solo cable (stub del TRF). El wire--from del QVS se anula
+ * para no crear un segundo tramo desalinhado (escalÛn).
  */
 .lcs-dual--both .lcs440-rail__qvs-leg__wire--from {
   flex: 0 0 0 !important;
@@ -5013,14 +5029,14 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
     rgba(14, 24, 34, 0.82) 100%
   );
   box-shadow: inset 0 0 0 1px rgba(90, 150, 210, 0.12);
-  /* Hueco m√≠nimo: el stub TRF‚ÜíQVS es el puente continuo */
+  /* Hueco mÌnimo: el stub TRF?QVS es el puente continuo */
   margin-top: 0.12rem;
   /* Plantilla LCS-4PWS0001: padding izq = der (LCS_LAYOUT_TOKENS.chassisPadX) */
   padding: 0.25rem 0.55rem 0.65rem;
   overflow: visible;
 }
 
-/* SSB 440/230 V: mismo chasis que LCS, tono un poco m√°s cerrado */
+/* SSB 440/230 V: mismo chasis que LCS, tono un poco m·s cerrado */
 .equip-chassis--ssb {
   border-color: rgba(110, 140, 170, 0.6);
   background: linear-gradient(
@@ -5030,7 +5046,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   );
   box-shadow: inset 0 0 0 1px rgba(110, 140, 170, 0.1);
   margin-top: 0.2rem;
-  /* Etiqueta absolute: reservar hueco para que INS no invada el r√≥tulo */
+  /* Etiqueta absolute: reservar hueco para que INS no invada el rÛtulo */
   padding: 2.35rem 0.55rem 0.55rem;
   overflow: visible;
   width: max-content;
@@ -5044,7 +5060,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   line-height: 1.2;
 }
 
-/* Interior SSB: INS ‚Üí barra ‚Üí salidas */
+/* Interior SSB: INS ? barra ? salidas */
 .ssb-board {
   display: flex;
   flex-direction: column;
@@ -5055,7 +5071,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   gap: 0;
 }
 
-/* En chasis el hueco del r√≥tulo ya est√° en padding del chasis */
+/* En chasis el hueco del rÛtulo ya est· en padding del chasis */
 .equip-chassis--ssb .ssb-board {
   padding-top: 0;
 }
@@ -5065,7 +5081,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  /* Por encima del r√≥tulo (z 7): el INS recibe hover */
+  /* Por encima del rÛtulo (z 7): el INS recibe hover */
   z-index: 8;
 }
 
@@ -5080,7 +5096,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Continuidad vertical en chasis SSB: l√≠nea centrada detr√°s del r√≥tulo
+ * Continuidad vertical en chasis SSB: lÌnea centrada detr·s del rÛtulo
  * (etiqueta a la izquierda, z-index mayor). Sin margen negativo en el INS.
  */
 .equip-chassis--ssb::before {
@@ -5089,7 +5105,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   left: 50%;
   top: 0;
   width: 2px;
-  /* Atraviesa el padding del r√≥tulo hasta besar el INS */
+  /* Atraviesa el padding del rÛtulo hasta besar el INS */
   height: calc(2.35rem + 0.15rem);
   transform: translateX(-50%);
   background: color-mix(in srgb, var(--flow-wire) 50%, #3d4f4a);
@@ -5107,7 +5123,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background: var(--flow-wire);
 }
 
-/* Chasis: riser corto bajo el r√≥tulo, empalme con ::before ‚Üí INS */
+/* Chasis: riser corto bajo el rÛtulo, empalme con ::before ? INS */
 .hbus-drop--ssb-open > .equip-chassis--ssb .ssb-board__feed > .ssb-board__riser:first-child,
 .hbus-drop--ssb-open > .hbus-drop__eq-row > .equip-chassis--ssb .ssb-board__feed > .ssb-board__riser:first-child {
   margin-top: -0.35rem;
@@ -5118,7 +5134,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * SSB anidado (EquipmentBusDrop): besar el borde inferior del chip
- * (‚àí2px, mismo criterio que --to-eq / --to-bus), sin invadir el interior.
+ * (-2px, mismo criterio que --to-eq / --to-bus), sin invadir el interior.
  */
 .hbus-drop--ssb-open > .hbus-drop__eq-wrap + .ssb-board .ssb-board__feed > .ssb-board__riser:first-child {
   margin-top: -2px;
@@ -5171,7 +5187,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   box-shadow: 0 0 6px rgba(var(--flow-glow-rgb), 0.35);
 }
 
-/* Entrada/salida INS: amarillo (tensi√≥n) cuando la acometida o la barra fluyen */
+/* Entrada/salida INS: amarillo (tensiÛn) cuando la acometida o la barra fluyen */
 .equip-chassis--ssb.equip-chassis--feed-flow .ssb-board__feed > .ssb-board__riser:first-child,
 .ssb-board--fed .ssb-board__feed > .ssb-board__riser:first-child {
   background: var(--flow-wire);
@@ -5278,7 +5294,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   margin-top: 0.2rem;
 }
 
-/* SSB-2PWS4531 (Excel 2864): INS ‚Üí Q01 ‚Üí 6 enchufes trif√°sicos IEC */
+/* SSB-2PWS4531 (Excel 2864): INS ? Q01 ? 6 enchufes trif·sicos IEC */
 .ssb-board--4531 {
   min-width: 14rem;
   width: max-content;
@@ -5438,9 +5454,9 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * DEFINITIVO ‚Äî entrada NORM centrada en SALIDAS 1.
+ * DEFINITIVO ó entrada NORM centrada en SALIDAS 1.
  * Gutter 6.5rem (= padding del cartel) + pista 1fr (= trazo de la barra).
- * QN en la pista, justify-self:center ‚Üí siempre al centro del trazo.
+ * QN en la pista, justify-self:center ? siempre al centro del trazo.
  */
 .ssb2209-s1-stack {
   grid-area: s1stack;
@@ -5592,7 +5608,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   flex-direction: column;
   align-items: center;
   align-self: start;
-  /* Mismo inset que Barra Q03 (cartel) ‚Üí Q03 centrado en el trazo de la barra */
+  /* Mismo inset que Barra Q03 (cartel) ? Q03 centrado en el trazo de la barra */
   justify-self: stretch;
   width: auto;
   margin-left: 4rem;
@@ -5642,7 +5658,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * SALIDAS 2: misma fila/altura que Barra Q03.
- * Ancho = cols 2‚Äì4 (Q0T + extensi√≥n Q01/Q04/Q05); s2body fija la col 4.
+ * Ancho = cols 2ñ4 (Q0T + extensiÛn Q01/Q04/Q05); s2body fija la col 4.
  */
 /* Cartel S2 en s2body (bajo la barra), no encima: Q0T-I/II lo tapaban */
 .ssb2209-a-s2.ssb2209-bus {
@@ -5926,7 +5942,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background: color-mix(in srgb, #ffe066 35%, #fff8d6);
 }
 
-/* Continuidad chasis ‚Üí feed QN / QA (ejes 4Q08 / Q03 ALT) */
+/* Continuidad chasis ? feed QN / QA (ejes 4Q08 / Q03 ALT) */
 .hbus-drop--ssb-open > .equip-chassis--ssb .ssb-board--2209 > .ssb2209-shell > .ssb2209-feed-qn > .ssb-board__riser:first-child,
 .hbus-drop--ssb-open > .hbus-drop__eq-row > .equip-chassis--ssb .ssb-board--2209 > .ssb2209-shell > .ssb2209-feed-qn > .ssb-board__riser:first-child,
 .hbus-drop--ssb-open > .equip-chassis--ssb .ssb-board--2209 > .ssb2209-shell > .ssb2209-feed-qa > .ssb-board__riser:first-child,
@@ -5944,7 +5960,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   flex: 0 0 calc(2.35rem + 0.85rem);
 }
 
-/* Solape extra to-eq ‚Üî chasis en 2209 (solo el drop 2209, no el SSB padre) */
+/* Solape extra to-eq ? chasis en 2209 (solo el drop 2209, no el SSB padre) */
 .hbus-drop--ssb-open.hbus-drop--ssb2209 > .hbus-drop__tops .hbus-drop__wire--to-eq {
   margin-bottom: -6px;
 }
@@ -5959,10 +5975,10 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * CONGELADO ‚Äî tops dual 2209: NORM‚ÜíQN + ALT(Q03)‚ÜíQA fuera del chasis.
+ * CONGELADO ó tops dual 2209: NORM?QN + ALT(Q03)?QA fuera del chasis.
  * Ancho/margen del tops lo escribe JS (= chasis). Piernas absolutas en ejes.
- * IMPORTANT: clase .hbus-drop--ssb2209 (no :has(.ssb-board--2209) gen√©rico):
- * si el 2209 cuelga de 2410-Q03, el padre tambi√©n :has board-2209 y el INS
+ * IMPORTANT: clase .hbus-drop--ssb2209 (no :has(.ssb-board--2209) genÈrico):
+ * si el 2209 cuelga de 2410-Q03, el padre tambiÈn :has board-2209 y el INS
  * del 2410 acababa en absolute descolocado.
  */
 .hbus-drop--ssb-open.hbus-drop--ssb2209 {
@@ -5998,14 +6014,14 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   left: var(--ssb2209-qa-axis, 50%);
 }
 
-/* Dual gen√©rico no debe forzar min-width:100% sobre el tops 2209 */
+/* Dual genÈrico no debe forzar min-width:100% sobre el tops 2209 */
 .hbus-drop--ssb-open.hbus-drop--ssb2209.hbus-drop--dual > .hbus-drop__tops {
   min-width: 0;
   width: auto;
   justify-content: flex-start;
 }
 
-/* R√≥tulo a la izquierda; hilos en ejes QN/QA */
+/* RÛtulo a la izquierda; hilos en ejes QN/QA */
 .hbus-drop--ssb2209 > .hbus-drop__eq-row > .equip-chassis--ssb > .equip-chassis__label,
 .hbus-drop--ssb2209 > .equip-chassis--ssb > .equip-chassis__label {
   left: 0.55rem;
@@ -6015,8 +6031,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * Continuidad vertical:
- *   NORM: to-eq ‚Üí ::before ‚Üí riser QN
- *   ALT:  to-eq ‚Üí .ssb2209-chassis-alt-riser ‚Üí riser QA
+ *   NORM: to-eq ? ::before ? riser QN
+ *   ALT:  to-eq ? .ssb2209-chassis-alt-riser ? riser QA
  *   (::after del chasis queda libre para el halo de localizar)
  */
 .hbus-drop--ssb2209 > .hbus-drop__eq-row > .equip-chassis--ssb::before,
@@ -6055,11 +6071,11 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Bajante LCS‚ÜíSSB 2209: altura fija (no var JS).
+ * Bajante LCS?SSB 2209: altura fija (no var JS).
  * El riser de QN completa el tramo dentro del chasis.
  */
 /*
- * Bajante LCS‚ÜíSSB 2209: fallback; la altura real la escribe JS hasta QN/QA.
+ * Bajante LCS?SSB 2209: fallback; la altura real la escribe JS hasta QN/QA.
  */
 .hbus-drop--ssb-open.hbus-drop--ssb2209 > .hbus-drop__tops .hbus-drop__wire--to-eq {
   flex: 0 0 7.25rem !important;
@@ -6073,7 +6089,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Bajante LCS‚ÜíSSB gen√©rico al desplegar (no 2209): empuja el cuadro bajo vecinos.
+ * Bajante LCS?SSB genÈrico al desplegar (no 2209): empuja el cuadro bajo vecinos.
  */
 .hbus-drop--ssb-open:not(.hbus-drop--ssb2209):has(> .equip-chassis--ssb, > .hbus-drop__eq-row > .equip-chassis--ssb) > .hbus-drop__tops .hbus-drop__wire--to-eq,
 .lcs-out--dual .hbus-drop--ssb-open:not(.hbus-drop--ssb2209):has(> .equip-chassis--ssb, > .hbus-drop__eq-row > .equip-chassis--ssb) > .hbus-drop__tops .hbus-drop__wire--to-eq {
@@ -6083,7 +6099,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Varios SSB abiertos (no 2209): bajante corta para no crear franja vac√≠a.
+ * Varios SSB abiertos (no 2209): bajante corta para no crear franja vacÌa.
  */
 .hbus--lcs-section:has(
     .hbus__slot:has(.hbus-drop--ssb-open) ~ .hbus__slot:has(.hbus-drop--ssb-open)
@@ -6105,7 +6121,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 .hbus-drop--ssb-open > .equip-chassis--ssb,
 .hbus-drop--ssb-open > .hbus-drop__eq-row > .equip-chassis--ssb {
   margin-top: 0;
-  /* Conservar padding-top del r√≥tulo (2.35rem); no resetear a 0.15rem */
+  /* Conservar padding-top del rÛtulo (2.35rem); no resetear a 0.15rem */
   align-self: center;
 }
 
@@ -6219,7 +6235,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   min-width: 0;
 }
 
-/* Salidas LCS = mismo formato / tipograf√≠a / colores que MSB */
+/* Salidas LCS = mismo formato / tipografÌa / colores que MSB */
 .hbus--lcs-section {
   margin: 0;
   padding: 0;
@@ -6244,7 +6260,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   min-width: 7.6rem;
 }
 
-/* Salidas LCS: pierna centrada (cable ‚â° eje del chip), como MSB */
+/* Salidas LCS: pierna centrada (cable = eje del chip), como MSB */
 .hbus--lcs-section .hbus-drop__tops {
   width: 100%;
   justify-content: center;
@@ -6294,7 +6310,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   z-index: 2;
 }
 
-/* MSB-4SFS: salidas unidas a la barra (despu√©s del stub corto SSB).
+/* MSB-4SFS: salidas unidas a la barra (despuÈs del stub corto SSB).
  * La fila de barra es flat (tag | rail); solo hay que cruzar media altura. */
 .msb4sfs-rack__drops.hbus--ssb-section
   > .hbus__drops
@@ -6317,7 +6333,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   z-index: 2;
 }
 
-/* Pierna centrada bajo la barra: cable ‚â° eje del s√≠mbolo IEC */
+/* Pierna centrada bajo la barra: cable = eje del sÌmbolo IEC */
 .hbus--ssb-section .hbus-drop__tops {
   justify-content: center;
 }
@@ -6452,7 +6468,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   color: #6dcfb5;
 }
 
-/* Nombre/descripci√≥n: tipograf√≠a y color del MSB (no heredar tono de familia) */
+/* Nombre/descripciÛn: tipografÌa y color del MSB (no heredar tono de familia) */
 .hbus-drop__eq--fam-abt .hbus-drop__name,
 .hbus-drop__eq--fam-trf .hbus-drop__name,
 .hbus-drop__eq--fam-lcs .hbus-drop__name,
@@ -6497,7 +6513,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   > .hbus--chain-link.hbus--direct {
   position: relative;
   margin-top: 0;
-  /* Un poco m√°s de pata desde S01 hasta el SSB */
+  /* Un poco m·s de pata desde S01 hasta el SSB */
   padding-top: 1.55rem;
 }
 
@@ -6522,7 +6538,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   box-shadow: 0 0 6px rgba(var(--flow-glow-rgb), 0.35);
 }
 
-/* Tras S01 (secundaria 230 V): el tramo al SSB usa la tensi√≥n del hijo */
+/* Tras S01 (secundaria 230 V): el tramo al SSB usa la tensiÛn del hijo */
 .hbus-drop--fam-trf.hbus-drop--chain-open:has(.hbus-drop__trf-inbrk)
   > .hbus--chain-link[data-flow-v]::before {
   background: color-mix(in srgb, var(--flow-wire) 40%, #3d4f4a);
@@ -6581,7 +6597,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /* Dual / multi-pierna: el slot crece con las piernas (antes 7.6rem fijo
- * aplastaba 3‚Äì4 piernas y se solapaban con los vecinos). */
+ * aplastaba 3ñ4 piernas y se solapaban con los vecinos). */
 .hbus__slot:has(.hbus-drop--dual) {
   width: max-content;
   min-width: 7.6rem;
@@ -6626,7 +6642,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   width: 100%;
 }
 
-/* Solo la pierna local DIRECTA de este drop (no anidados ABT‚ÜíTRF‚ÜíLCS) */
+/* Solo la pierna local DIRECTA de este drop (no anidados ABT?TRF?LCS) */
 .hbus-drop--alt > .hbus-drop__tops > .hbus-drop__leg--local .hbus-drop__wire {
   background: var(--wire-idle-alt);
 }
@@ -6667,7 +6683,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Enchufes SKT: misma altura de recuadro (texto multil√≠nea acotado + hueco
+ * Enchufes SKT: misma altura de recuadro (texto multilÌnea acotado + hueco
  * reservado para el control expand, aunque no exista).
  */
 .hbus-drop__eq[data-equip^='SKT-'] {
@@ -6703,8 +6719,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Continuidad del unifilar a trav√©s del recuadro:
- * l√≠nea vertical tenue detr√°s del texto.
+ * Continuidad del unifilar a travÈs del recuadro:
+ * lÌnea vertical tenue detr·s del texto.
  */
 .hbus-drop__eq::before {
   content: '';
@@ -6745,7 +6761,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   z-index: 1;
 }
 
-/* Flujo dentro del recuadro: solo acometida local (nunca pisar stubs TRF‚ÜíQVS dual) */
+/* Flujo dentro del recuadro: solo acometida local (nunca pisar stubs TRF?QVS dual) */
 .hbus-drop--flow:not(.hbus-drop--dual-feed)
   > .hbus-drop__eq-row
   > .hbus-drop__eq-wrap
@@ -6781,7 +6797,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   z-index: 0;
 }
 
-/* Equipo hijo sin conducci√≥n: no heredar part√≠culas del CCM/cuadro padre */
+/* Equipo hijo sin conducciÛn: no heredar partÌculas del CCM/cuadro padre */
 .hbus-drop:not(.hbus-drop--flow) > .hbus-drop__eq-row > .hbus-drop__eq-wrap > .hbus-drop__eq::after,
 .hbus-drop:not(.hbus-drop--flow) > .hbus-drop__eq-wrap > .hbus-drop__eq::after {
   content: none;
@@ -6789,7 +6805,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   animation: none;
 }
 
-/* Cadena abierta: la l√≠nea atraviesa el recuadro hacia el hijo */
+/* Cadena abierta: la lÌnea atraviesa el recuadro hacia el hijo */
 .hbus-drop--chain-open > .hbus-drop__eq-wrap {
   overflow: visible;
 }
@@ -6972,7 +6988,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   opacity: 0.9;
 }
 
-/* √Årbol de b√∫squeda: equipo √∫nico + alimentaciones convergentes */
+/* ¡rbol de b˙squeda: equipo ˙nico + alimentaciones convergentes */
 .stree {
   padding: 0.75rem 1rem 1.5rem;
   min-width: max-content;
@@ -7055,7 +7071,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   opacity: 0.85;
 }
 
-/* Alimentaci√≥n √∫nica: el pie del cable empalma con la caja del equipo */
+/* AlimentaciÛn ˙nica: el pie del cable empalma con la caja del equipo */
 .stree-feed--single .stree-branch__wire--foot {
   min-height: 0.85rem;
 }
@@ -7076,8 +7092,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Cables del √°rbol: mismo criterio de tensi√≥n que el unifilar (data-flow-v).
- * Sustituye NORM=amarillo / ALT=azul / AUX=salmon cuando hay tensi√≥n conocida.
+ * Cables del ·rbol: mismo criterio de tensiÛn que el unifilar (data-flow-v).
+ * Sustituye NORM=amarillo / ALT=azul / AUX=salmon cuando hay tensiÛn conocida.
  */
 .stree-branch[data-flow-v],
 .stree-branch__leg[data-flow-v],
@@ -7167,8 +7183,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Barra de uni√≥n dual: de centro a centro de cada rama
- * (mitad del min-width de .stree-branch ‚âà 2.875rem).
+ * Barra de uniÛn dual: de centro a centro de cada rama
+ * (mitad del min-width de .stree-branch ò 2.875rem).
  */
 .stree-join {
   height: 2px;
@@ -7196,7 +7212,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   margin-top: -1px;
 }
 
-/* LCS + CSB pares ‚Üí barra VS; etiqueta a la izquierda; stem sin interrupci√≥n */
+/* LCS + CSB pares ? barra VS; etiqueta a la izquierda; stem sin interrupciÛn */
 .stree-branch--lcs {
   min-width: 0;
   overflow: visible;
@@ -7233,7 +7249,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   flex: 1 1 5.75rem;
 }
 
-/* Empalme pierna ‚Üí barra (sin hueco) */
+/* Empalme pierna ? barra (sin hueco) */
 .stree-lcs-infeed__to-bus {
   min-height: 0.75rem;
   margin-bottom: -1px;
@@ -7314,7 +7330,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   margin-top: 0;
 }
 
-/* M√°s aire entre barras apiladas VS‚ÜíVM‚ÜíNV para que el cartel no alcance la adyacente */
+/* M·s aire entre barras apiladas VS?VM?NV para que el cartel no alcance la adyacente */
 .stree-lcs-infeed__section-wire {
   min-height: 1.35rem;
   margin-bottom: -1px;
@@ -7367,7 +7383,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   max-width: 100%;
 }
 
-/* Informe arranque: PUMA en una sola l√≠nea en todos los recuadros */
+/* Informe arranque: PUMA en una sola lÌnea en todos los recuadros */
 .stree--report .stree-eq__id {
   font-size: 0.56rem;
   font-weight: 600;
@@ -7481,7 +7497,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   max-width: 100%;
 }
 
-/* S√≠mbolo superior retirado: el hueco lo ocupa el n¬∫ de local */
+/* SÌmbolo superior retirado: el hueco lo ocupa el n∫ de local */
 .stree-eq__sym {
   display: none !important;
 }
@@ -7502,7 +7518,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   line-height: 1.25;
 }
 
-/* ‚Äî‚Äî TRF banco + LCS 440/230 V (barras duales) ‚Äî‚Äî */
+/* óó TRF banco + LCS 440/230 V (barras duales) óó */
 .hbus-drop__bank {
   display: block;
   width: 100%;
@@ -7640,7 +7656,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   align-items: stretch;
 }
 
-/* Banco monof√°sico */
+/* Banco monof·sico */
 .trf-bank {
   border: 1px dashed color-mix(in srgb, #6a8aaa 50%, transparent);
   border-radius: 5px;
@@ -7731,7 +7747,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   line-height: 1.15;
 }
 
-/* Tres fases 440 ‚Üí colector ‚Üí QVS (l√≠neas continuas) */
+/* Tres fases 440 ? colector ? QVS (lÌneas continuas) */
 .trf-feed440 {
   display: flex;
   flex-direction: column;
@@ -7816,7 +7832,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   font-family: var(--mono);
 }
 
-/* Barra LCS: QVS (columna VS) ‚Üí etiqueta ‚Üí bus ‚Üí hueco ‚Üí salidas */
+/* Barra LCS: QVS (columna VS) ? etiqueta ? bus ? hueco ? salidas */
 .lcs440-board {
   display: flex;
   flex-direction: column;
@@ -7848,7 +7864,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   overflow: visible;
 }
 
-/* 230 V: espejo NV ‚Äî QNV ‚Äî VM ‚Äî QVM ‚Äî VS (QVS en VS, a la derecha) */
+/* 230 V: espejo NV ó QNV ó VM ó QVM ó VS (QVS en VS, a la derecha) */
 .lcs440-rail--mirror {
   grid-template-columns:
     max-content
@@ -7902,7 +7918,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   grid-column: 1;
 }
 
-/* Halo de flujo en espejo: VS‚ÜíNV va hacia la izquierda */
+/* Halo de flujo en espejo: VS?NV va hacia la izquierda */
 .lcs440-rail--mirror .lcs440-cell__bus--live::before,
 .lcs440-rail--mirror .lcs440-cell__bus--live::after,
 .lcs440-rail--mirror .lcs440-tie--flow .lcs440-tie__bridge::before,
@@ -7941,12 +7957,12 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * QVS + QS* en paralelo:
- * - Columna VS crece a la dcha. (--lcs-vs-parallel-ext) ‚Üí QVM se aleja
- * - QVS centrado en el tramo core (sync TRF); QS1 en la extensi√≥n
- * - CSB alineado en top/altura con el TRF v√≠a syncParallelCsb
+ * - Columna VS crece a la dcha. (--lcs-vs-parallel-ext) ? QVM se aleja
+ * - QVS centrado en el tramo core (sync TRF); QS1 en la extensiÛn
+ * - CSB alineado en top/altura con el TRF vÌa syncParallelCsb
  */
 .lcs440-board--parallel-feed {
-  /* Extensi√≥n justo para QS+CSB compacto (sin invadir el vano TRF/VS) */
+  /* ExtensiÛn justo para QS+CSB compacto (sin invadir el vano TRF/VS) */
   --lcs-vs-parallel-ext: 5.6rem;
 }
 
@@ -7971,7 +7987,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   z-index: 12;
 }
 
-/* QVS: centro del tramo core (sin la extensi√≥n QS) */
+/* QVS: centro del tramo core (sin la extensiÛn QS) */
 .lcs440-rail__feed-bay .lcs440-rail__qvs-leg {
   grid-column: auto;
   grid-row: auto;
@@ -7983,7 +7999,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   height: auto;
 }
 
-/* QS1 centrado en la extensi√≥n VS, a la izquierda de QVM */
+/* QS1 centrado en la extensiÛn VS, a la izquierda de QVM */
 .lcs440-rail__qs-leg {
   position: absolute;
   left: calc(100% - var(--lcs-vs-parallel-ext, 6.4rem) / 2);
@@ -8011,7 +8027,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   min-width: 2.6rem;
 }
 
-/* QS1: alimentaci√≥n alternativa (azul solo con flujo) */
+/* QS1: alimentaciÛn alternativa (azul solo con flujo) */
 .lcs440-rail__qs-leg .lcs440-rail__qvs-leg__wire {
   background: var(--wire-idle-alt);
 }
@@ -8031,7 +8047,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 .lcs440-rail__qs-leg__wire--from {
-  /* El tramo CSB‚ÜíQS1 lo pinta ::after del CSB (--qs-drop-h) */
+  /* El tramo CSB?QS1 lo pinta ::after del CSB (--qs-drop-h) */
   flex: 0 0 0;
   min-height: 0;
   opacity: 0;
@@ -8048,7 +8064,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background: var(--line-alt);
 }
 
-/* CSB: compacto para no solaparse con el TRF; top/altura v√≠a syncParallelCsb */
+/* CSB: compacto para no solaparse con el TRF; top/altura vÌa syncParallelCsb */
 .lcs440-rail__parallel-src {
   position: absolute;
   left: 50%;
@@ -8110,7 +8126,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   border-color: color-mix(in srgb, var(--line-alt) 55%, var(--border));
 }
 
-/* Pista VS: tramo core (sync TRF) + extensi√≥n bajo QS1 */
+/* Pista VS: tramo core (sync TRF) + extensiÛn bajo QS1 */
 .lcs440-rail__vs-bus-track {
   grid-column: 1;
   grid-row: bus;
@@ -8173,7 +8189,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 .lcs440-rail__qvs-leg__wire--from {
-  /* Separaci√≥n TRF ‚Üî LCS: cable largo bajo el stub del transformador */
+  /* SeparaciÛn TRF ? LCS: cable largo bajo el stub del transformador */
   flex: 1 1 auto;
   min-height: 2.4rem;
   margin-top: 0.15rem;
@@ -8189,7 +8205,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background: var(--flow-wire);
 }
 
-/* Piernas QVS/QS LCS: color por tensi√≥n de barra (data-flow-v) */
+/* Piernas QVS/QS LCS: color por tensiÛn de barra (data-flow-v) */
 .lcs440-rail__qvs-leg[data-flow-v],
 .lcs440-rail__qs-leg[data-flow-v] {
   --leg-wire-idle: color-mix(in srgb, var(--flow-wire) 40%, #3d4f4a);
@@ -8242,7 +8258,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Part√≠culas verticales en LCS / QS / SSB / 4SFS / TRF (mismo patr√≥n que bajantes MSB).
+ * PartÌculas verticales en LCS / QS / SSB / 4SFS / TRF (mismo patrÛn que bajantes MSB).
  */
 .lcs440-rail__qvs-leg--flow .lcs440-rail__qvs-leg__wire::before,
 .lcs440-rail__qvs-leg--flow .lcs440-rail__qvs-leg__wire::after,
@@ -8298,7 +8314,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   height: 24%;
 }
 
-/* Tensi√≥n hasta el chip (abierto): part√≠cula solo en el tramo de acometida */
+/* TensiÛn hasta el chip (abierto): partÌcula solo en el tramo de acometida */
 .lcs440-rail__qvs-leg--from-live:not(.lcs440-rail__qvs-leg--flow)
   .lcs440-rail__qvs-leg__wire--from::before,
 .lcs440-rail__qvs-leg--from-live:not(.lcs440-rail__qvs-leg--flow)
@@ -8343,7 +8359,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   height: 20%;
 }
 
-/* Aguas abajo abierto en LCS: sin part√≠culas */
+/* Aguas abajo abierto en LCS: sin partÌculas */
 .lcs440-rail__qvs-leg--open:not(.lcs440-rail__qvs-leg--flow)
   .lcs440-rail__qvs-leg__wire--to-bus::before,
 .lcs440-rail__qvs-leg--open:not(.lcs440-rail__qvs-leg--flow)
@@ -8365,8 +8381,8 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   justify-self: start;
   align-self: end;
   /*
-   * Cartel completamente por encima de la barra: la l√≠nea NO atraviesa el texto.
-   * Evita el aspecto ¬´montado¬ª sobre el bus propio y el solape con el adyacente.
+   * Cartel completamente por encima de la barra: la lÌnea NO atraviesa el texto.
+   * Evita el aspecto ´montadoª sobre el bus propio y el solape con el adyacente.
    */
   margin: 0 0 0.85rem 0.2rem;
   max-width: none;
@@ -8449,7 +8465,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   z-index: 2;
 }
 
-/* Acopladores centrados en la l√≠nea de barra */
+/* Acopladores centrados en la lÌnea de barra */
 .lcs440-rail__qvm {
   grid-column: 2;
   grid-row: bus;
@@ -8508,7 +8524,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   padding: 0.12rem 0.38rem;
   border-radius: 3px;
   letter-spacing: 0.03em;
-  /* Fondo opaco: la barra no se ve a trav√©s del cartel */
+  /* Fondo opaco: la barra no se ve a travÈs del cartel */
   background-color: #121c24;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
 }
@@ -8561,7 +8577,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background: var(--flow-wire);
 }
 
-/* Dentro del chasis LCS: mismas part√≠culas que fuera (no atenuar el flujo) */
+/* Dentro del chasis LCS: mismas partÌculas que fuera (no atenuar el flujo) */
 .equip-chassis .lcs440-tie--flow .lcs440-tie__bridge {
   position: relative;
   overflow: visible;
@@ -8587,7 +8603,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   position: relative;
 }
 
-/* Doble alimentaci√≥n (criterio MSB): pierna local + stub remoto */
+/* Doble alimentaciÛn (criterio MSB): pierna local + stub remoto */
 .lcs-out--dual {
   flex: 0 0 auto;
   width: auto;
@@ -8692,7 +8708,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   overflow: visible;
 }
 
-/* Continuidad tenue a trav√©s del recuadro de carga LCS */
+/* Continuidad tenue a travÈs del recuadro de carga LCS */
 .lcs-out__eq::before {
   content: '';
   position: absolute;
@@ -8823,10 +8839,10 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /* ========================================================================
- * Legibilidad del unifilar ‚Äî jerarqu√≠a, LOD, hover, consola
+ * Legibilidad del unifilar ó jerarquÌa, LOD, hover, consola
  * ======================================================================== */
 
-/* Ret√≠cula suave en el escenario (no compite con el diagrama) */
+/* RetÌcula suave en el escenario (no compite con el diagrama) */
 .casc__stage--plant {
   background-color: transparent;
   background-image:
@@ -8836,7 +8852,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   background-attachment: local;
 }
 
-/* Topbar: grupos Vista | Simulaci√≥n | Datos */
+/* Topbar: grupos Vista | SimulaciÛn | Datos */
 .topbar__console {
   display: inline-flex;
   flex-wrap: wrap;
@@ -8851,7 +8867,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   border-right: 1px solid var(--border);
 }
 
-/* Barras: m√°s peso visual + remate suave */
+/* Barras: m·s peso visual + remate suave */
 .plant-rack__rail-seg {
   height: var(--wire-rail);
   border-radius: 2px;
@@ -8883,7 +8899,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
     0 0 5px rgba(var(--flow-glow-rgb), 0.28);
 }
 
-/* Jerarqu√≠a de cables: barra > acometida > salida > respeto */
+/* JerarquÌa de cables: barra > acometida > salida > respeto */
 .hbus-drop__wire,
 .hbus-drop__wire--thru,
 .msb4sfs-trf115__wire,
@@ -8910,7 +8926,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   animation: live-equip-pulse 2.4s ease-in-out infinite;
 }
 
-/* Locate / jump: marco m√°s limpio, menos pulso agresivo */
+/* Locate / jump: marco m·s limpio, menos pulso agresivo */
 .hbus-drop--locate::after,
 .equip-chassis--locate::after,
 .casc-gen--locate::after,
@@ -8943,7 +8959,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   }
 }
 
-/* RESPETO: m√°s tenue, no compite con circuitos activos */
+/* RESPETO: m·s tenue, no compite con circuitos activos */
 .hbus-drop--spare {
   opacity: 0.62;
   filter: saturate(0.75);
@@ -8967,7 +8983,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   font-size: 0.58rem;
 }
 
-/* Tipograf√≠a: ID dominante, nombre secundario */
+/* TipografÌa: ID dominante, nombre secundario */
 .hbus-drop__id {
   font-size: 0.62rem;
   font-weight: 700;
@@ -8991,7 +9007,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   letter-spacing: 0.02em;
 }
 
-/* Chevron / ¬´m√°s¬ª discreto */
+/* Chevron / ´m·sª discreto */
 .hbus-drop__more {
   font-size: 0.52rem;
   font-weight: 500;
@@ -9049,7 +9065,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   outline-offset: 1px;
 }
 
-/* Globo: anclado arriba o abajo seg√∫n espacio */
+/* Globo: anclado arriba o abajo seg˙n espacio */
 .equip-balloon--portal.equip-balloon--above {
   transform: translate(-50%, -100%);
 }
@@ -9121,7 +9137,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   color: var(--muted);
 }
 
-/* ‚Äî‚Äî Arranque / informe alimentaciones ‚Äî‚Äî */
+/* óó Arranque / informe alimentaciones óó */
 .startup-panel {
   display: flex;
   flex-direction: column;
@@ -9463,7 +9479,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   margin-bottom: 0.65rem;
 }
 
-/* √Årbol arranque: mismo estilo que b√∫squeda + bajantes destino */
+/* ¡rbol arranque: mismo estilo que b˙squeda + bajantes destino */
 .stree-downstream {
   display: flex;
   flex-direction: column;
@@ -9519,7 +9535,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   min-width: 5.75rem;
 }
 
-/* LCS √°rbol: rejilla lcs440-rail (barras continuas, acopladores centrados) */
+/* LCS ·rbol: rejilla lcs440-rail (barras continuas, acopladores centrados) */
 .stree-lcs-rails {
   display: flex;
   flex-direction: column;
@@ -9541,7 +9557,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   display: none;
 }
 
-/* Hub LCS + carriles: pierna QVS como unifilar (qvs ‚Üí label ‚Üí bus) */
+/* Hub LCS + carriles: pierna QVS como unifilar (qvs ? label ? bus) */
 .stree-node__lcs-hub {
   display: flex;
   flex-direction: column;
@@ -9596,7 +9612,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   overflow: visible;
 }
 
-/* Bajante LCS ‚Üí QVS: siempre v√≠a stree-lcs-rails__fan (no tap suelto en columna) */
+/* Bajante LCS ? QVS: siempre vÌa stree-lcs-rails__fan (no tap suelto en columna) */
 
 .stree-lcs-rail {
   --lcs-vs-col: 5.75rem;
@@ -9614,7 +9630,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Pierna QVS en √°rbol: rejilla interna fija (arriba / QVS / abajo a barra).
+ * Pierna QVS en ·rbol: rejilla interna fija (arriba / QVS / abajo a barra).
  * Evita que flex reparta el espacio y deje el cartel VS montado sobre el chip.
  */
 .stree-node__lcs-hub .lcs440-rail__qvs-leg {
@@ -9657,7 +9673,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   margin: 0 0 -2px;
 }
 
-/* Cartel VS en fila label, lateral al eje QVS ‚Äî no sobre la pata vertical */
+/* Cartel VS en fila label, lateral al eje QVS ó no sobre la pata vertical */
 .stree-lcs-rail .lcs440-rail__vs-tag {
   grid-row: label;
   align-self: end;
@@ -9724,7 +9740,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   grid-column: 1;
 }
 
-/* Completo VS‚ÄîQVM‚ÄîVM‚ÄîQNV‚ÄîNV: columnas est√°ndar lcs440-rail (--full) */
+/* Completo VSóQVMóVMóQNVóNV: columnas est·ndar lcs440-rail (--full) */
 
 .stree-lcs-rail .lcs440-rail__vs-drops,
 .stree-lcs-rail .lcs440-rail__vm-drops,
@@ -9770,7 +9786,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 /*
  * Abanico LCS: bajante centrada + barra horizontal (dual) alineada con patas QVS.
- * Vanos expl√≠citos bajo el cuadro LCS (hub-gap + fan-drop) ‚Äî sin solapar el LCS.
+ * Vanos explÌcitos bajo el cuadro LCS (hub-gap + fan-drop) ó sin solapar el LCS.
  */
 .stree-lcs-rails--dual {
   --stree-lcs-dual-gap: 2.75rem;
@@ -9802,7 +9818,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   overflow: visible;
 }
 
-/* Dual: m√°s vano bajo LCS (bajante) antes de la barra horizontal */
+/* Dual: m·s vano bajo LCS (bajante) antes de la barra horizontal */
 .stree-lcs-rails--dual .stree-lcs-rails__fan {
   height: calc(
     var(--stree-lcs-tap-h, 2.15rem) + var(--stree-lcs-fan-drop, 0.9rem)
@@ -9820,7 +9836,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   z-index: 2;
 }
 
-/* Una tensi√≥n: el cable QVS sube por el vano del fan (sin stem suelto) */
+/* Una tensiÛn: el cable QVS sube por el vano del fan (sin stem suelto) */
 .stree-node__lcs-hub .stree-lcs-rails--single .stree-lcs-rails__fan-stem {
   display: none;
 }
@@ -9841,7 +9857,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 }
 
 /*
- * Dual: pata vertical barra ‚Üí QVS (vanos bar-qvs-gap + bridge al chip).
+ * Dual: pata vertical barra ? QVS (vanos bar-qvs-gap + bridge al chip).
  * Single: cable QVS atraviesa hub-gap + fan hasta el LCS.
  */
 .stree-node__lcs-hub .stree-lcs-rails--dual .lcs440-rail__qvs-leg__wire--from {
@@ -10030,7 +10046,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   color: #546e7a !important;
 }
 
-/* En PDF del √°rbol de b√∫squeda: t√≠tulo corto, sin p√°rrafo largo */
+/* En PDF del ·rbol de b˙squeda: tÌtulo corto, sin p·rrafo largo */
 .stree--export .stree__head p {
   display: none !important;
 }
@@ -10176,7 +10192,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   }
 }
 
-/* ‚Äî‚Äî‚Äî Escritorios por buque: pantalla de elecci√≥n ‚Äî‚Äî‚Äî */
+/* óóó Escritorios por buque: pantalla de elecciÛn óóó */
 .vessel-gate {
   min-height: 100%;
   display: flex;
@@ -10275,7 +10291,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   font-weight: 500;
 }
 
-/* ‚Äî‚Äî Notas de revisi√≥n ‚Äî‚Äî */
+/* óó Notas de revisiÛn óó */
 .notes-badge {
   display: inline-flex;
   align-items: center;
@@ -10857,7 +10873,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 
 
 
-/* ‚Äî‚Äî Acceso con correo (mismo Firebase que escritorio) ‚Äî‚Äî */
+/* óó Acceso con correo (mismo Firebase que escritorio) óó */
 .login-gate__form {
   display: flex;
   flex-direction: column;

@@ -33,7 +33,7 @@ function isCoarsePointer(): boolean {
 
 /**
  * Globo de equipo — misma regla que el interruptor (BreakerChip):
- * - Ratón: mouseenter ~1,8 s → globo fijo (sin cancelar por rueda/trackpad).
+ * - Ratón/lápiz: ~1,8 s encima del recuadro → globo fijo.
  * - Táctil: pulsación larga ~1 s.
  */
 export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
@@ -81,6 +81,12 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
     },
     [clearTimer, clearLongPress],
   )
+
+  const armHover = useCallback(() => {
+    if (sticky.current) return
+    if (timer.current != null) return
+    timer.current = window.setTimeout(() => openSticky(false), delayMs)
+  }, [delayMs, openSticky])
 
   useEffect(
     () => () => {
@@ -180,11 +186,34 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
     if (isCoarsePointer()) e.preventDefault()
   }, [])
 
+  const onPointerEnter = useCallback(
+    (e: ReactPointerEvent) => {
+      if (e.pointerType === 'touch') return
+      armHover()
+    },
+    [armHover],
+  )
+
+  const onPointerLeave = useCallback(
+    (e: ReactPointerEvent) => {
+      if (e.pointerType === 'touch') return
+      const related = e.relatedTarget
+      if (
+        related instanceof Element &&
+        related.closest('.equip-balloon--portal')
+      ) {
+        return
+      }
+      if (sticky.current) return
+      clearTimer()
+    },
+    [clearTimer],
+  )
+
+  /** Fallback por si el navegador no entrega pointerenter en algún caso. */
   const onMouseEnter = useCallback(() => {
-    if (sticky.current) return
-    clearTimer()
-    timer.current = window.setTimeout(() => openSticky(false), delayMs)
-  }, [clearTimer, delayMs, openSticky])
+    armHover()
+  }, [armHover])
 
   const onMouseLeave = useCallback(
     (e: ReactMouseEvent) => {
@@ -210,6 +239,8 @@ export function useEquipInfoBalloon(delayMs = DEFAULT_HOVER_MS) {
     onPointerMove,
     onPointerUp,
     onPointerCancel,
+    onPointerEnter,
+    onPointerLeave,
     onClick,
     onContextMenu,
     onMouseEnter,
