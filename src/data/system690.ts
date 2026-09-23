@@ -125,8 +125,44 @@ export const embeddedRevD: DistributionData = augmentSpareCircuits(
  */
 export const embeddedSystem690: DistributionData = embeddedRevD
 
+/**
+ * Rev.C (Excel) trae `local` pero a menudo sin `localName` / `nme674Id`.
+ * Completa denominaciones con los mapas y, si falta el nombre de local,
+ * el de Rev.D (mismo tag PUMA).
+ */
+function enrichRevCTopology(
+  data: DistributionData,
+  localNameSource: DistributionData,
+): DistributionData {
+  const localNameById = new Map<string, string>()
+  for (const e of localNameSource.equipment) {
+    const ln = e.localName?.trim()
+    if (ln) localNameById.set(e.id, ln)
+  }
+  return {
+    ...data,
+    equipment: data.equipment.map((eq) => {
+      const nme = eq.nme674Id || nme674ByPuma[eq.id]
+      const localName =
+        eq.localName?.trim() || localNameById.get(eq.id) || undefined
+      const dcp10Id = eq.spare
+        ? eq.dcp10Id
+        : eq.dcp10Id || dcp10ByPuma[eq.id] || eq.id
+      return {
+        ...eq,
+        ...(nme ? { nme674Id: nme } : {}),
+        ...(localName ? { localName } : {}),
+        ...(dcp10Id ? { dcp10Id } : {}),
+      }
+    }),
+  }
+}
+
 /** Topología embebida Rev.C (consulta; congelada en build). */
-export const embeddedRevC: DistributionData = topologyRevC as DistributionData
+export const embeddedRevC: DistributionData = enrichRevCTopology(
+  topologyRevC as DistributionData,
+  embeddedRevD,
+)
 
 export type CircuitListRevision = 'C' | 'D'
 
