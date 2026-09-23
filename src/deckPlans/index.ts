@@ -1,7 +1,7 @@
 import manifestJson from '../data/deckPlans/manifest.json'
 import hitsJson from '../data/deckPlans/hits.json'
 import overridesJson from '../data/deckPlans/overrides.json'
-import { localLookupKeys, normalizeLocalCode } from './normalize'
+import { localLookupKeys, localStorageKey } from './normalize'
 import type {
   DeckPlanHit,
   DeckPlanHitsFile,
@@ -16,7 +16,7 @@ import {
 import { migrateHitPlanIds, migratePlanId } from './planIds'
 
 export type { DeckPlanHit, DeckPlanMeta, DeckPlanManifest, DeckPlanHitsFile }
-export { normalizeLocalCode, localLookupKeys } from './normalize'
+export { normalizeLocalCode, localLookupKeys, localStorageKey } from './normalize'
 export { migratePlanId, LEGACY_PLAN_IDS } from './planIds'
 export {
   requestOpenDeckPlan,
@@ -185,13 +185,14 @@ export async function publishLocalOverridesToCloud(
 
 /**
  * Guarda la marca del local (localStorage) y dispara sync a la nube.
+ * @returns false si el código de local no es usable.
  */
 export function saveLocalOverrideHit(
   rawLocal: string,
   hit: DeckPlanHit,
-): void {
-  const norm = normalizeLocalCode(rawLocal)
-  if (!norm) return
+): boolean {
+  const norm = localStorageKey(rawLocal)
+  if (!norm) return false
   const stamped: DeckPlanHit = {
     ...hit,
     planId: migratePlanId(hit.planId),
@@ -209,6 +210,7 @@ export function saveLocalOverrideHit(
   window.dispatchEvent(
     new CustomEvent(SCADA_DECK_PLAN_OVERRIDE_SAVED, { detail: { local: norm } }),
   )
+  return true
 }
 
 /** JSON listo para pegar en overrides.json (backup opcional). */

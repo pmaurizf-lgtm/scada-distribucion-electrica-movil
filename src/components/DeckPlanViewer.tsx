@@ -192,17 +192,21 @@ export function DeckPlanViewer({
   }
 
   const onPointerUp = (e: ReactPointerEvent) => {
-    if (dragRef.current?.pointerId === e.pointerId) dragRef.current = null
+    if (dragRef.current?.pointerId === e.pointerId) {
+      dragRef.current = null
+      return
+    }
   }
 
-  const onViewportClick = (e: ReactMouseEvent) => {
+  const placeMarkAtClient = (clientX: number, clientY: number) => {
     if (browseOnly || !adjustMode || !hit || !plan || !local?.trim()) return
     const vp = viewportRef.current
     if (!vp) return
     const r = vp.getBoundingClientRect()
-    const px = (e.clientX - r.left - pan.x) / zoom
-    const py = (e.clientY - r.top - pan.y) / zoom
-    saveLocalOverrideHit(local, {
+    const px = (clientX - r.left - pan.x) / zoom
+    const py = (clientY - r.top - pan.y) / zoom
+    if (!Number.isFinite(px) || !Number.isFinite(py)) return
+    const ok = saveLocalOverrideHit(local, {
       planId: hit.planId,
       x: Math.round(px),
       y: Math.round(py),
@@ -210,12 +214,34 @@ export function DeckPlanViewer({
       h: hit.h && hit.h > 0 ? hit.h : 48,
       conf: 100,
     })
+    if (!ok) {
+      setExportHint(
+        'No se pudo guardar: el código de local del equipo no es válido.',
+      )
+      window.setTimeout(() => setExportHint(null), 6000)
+      return
+    }
     setAdjustMode(false)
     setTick((t) => t + 1)
     setExportHint(
       'Posición guardada. Se recordará en este dispositivo y, si hay sesión, en la nube.',
     )
     window.setTimeout(() => setExportHint(null), 5000)
+  }
+
+  const onViewportClick = (e: ReactMouseEvent) => {
+    if (!adjustMode) return
+    e.preventDefault()
+    e.stopPropagation()
+    placeMarkAtClient(e.clientX, e.clientY)
+  }
+
+  const onViewportPointerUp = (e: ReactPointerEvent) => {
+    onPointerUp(e)
+    // Táctil: el click a veces no llega; colocar marca en pointerup en modo ajuste.
+    if (!adjustMode || browseOnly) return
+    if (e.pointerType === 'mouse') return
+    placeMarkAtClient(e.clientX, e.clientY)
   }
 
   const exportOverrides = (e?: { stopPropagation?: () => void; preventDefault?: () => void }) => {
@@ -481,7 +507,7 @@ export function DeckPlanViewer({
           onWheel={onWheel}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
+          onPointerUp={onViewportPointerUp}
           onPointerCancel={onPointerUp}
           onClick={onViewportClick}
         >
