@@ -372,6 +372,19 @@ export function EquipmentBalloon({
       </dl>
       </div>
       <footer className="equip-balloon__notes-foot">
+        {hasLocal ? (
+          <button
+            type="button"
+            className="btn equip-balloon__notes-btn equip-balloon__plan-btn"
+            onMouseDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+            onClick={openDeckPlan}
+          >
+            Ver en plano de cubierta
+          </button>
+        ) : null}
         <button
           type="button"
           className="btn equip-balloon__notes-btn"

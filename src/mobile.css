@@ -593,8 +593,25 @@ html.scada-mobile .equip-balloon--sheet .equip-balloon__header {
   align-items: center;
 }
 
-html.scada-mobile .equip-balloon--sheet .equip-balloon__notes-btn--header {
+/* En hoja móvil se oculta solo «Notas» del header (ya está en el pie);
+   «Plano» debe seguir visible. */
+html.scada-mobile
+  .equip-balloon--sheet
+  .equip-balloon__notes-btn--header:not(.equip-balloon__plan-btn) {
   display: none;
+}
+
+html.scada-mobile .equip-balloon--sheet .equip-balloon__header-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+}
+
+html.scada-mobile .equip-balloon--sheet .equip-balloon__plan-btn {
+  display: inline-flex;
+  min-height: var(--touch-min, 2.75rem);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
 }
 
 html.scada-mobile .equip-balloon--sheet .equip-balloon__body {
@@ -605,6 +622,9 @@ html.scada-mobile .equip-balloon--sheet .equip-balloon__body {
 html.scada-mobile .equip-balloon--sheet .equip-balloon__notes-foot {
   margin-top: 0.65rem;
   padding-top: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
 html.scada-mobile .equip-balloon--sheet .equip-balloon__notes-btn,
