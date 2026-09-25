@@ -11,6 +11,7 @@
     "deploy:nas": "bash scripts/deploy-nas.sh",
     "deck-plans:compress": "node scripts/compress-deck-plans.mjs",
     "deck-plans:ocr": "node scripts/ocr-deck-plans.mjs",
+    "import:local-blocks": "node scripts/import-local-blocks.mjs",
     "notes:rules": "npx firebase-tools deploy --only firestore:rules"
   },
   "dependencies": {

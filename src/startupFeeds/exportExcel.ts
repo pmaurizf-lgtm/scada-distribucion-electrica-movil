@@ -80,13 +80,14 @@ function addSsbSummarySheet(
     { header: 'Código NME', key: 'nme', width: 16 },
     { header: 'Local', key: 'local', width: 14 },
     { header: 'Nombre local', key: 'localName', width: 36 },
+    { header: 'Bloque', key: 'block', width: 14 },
     { header: 'Notas', key: 'notes', width: 48 },
   ]
   const titleRow = ws.addRow([
     'SSB y TRF necesarios para la puesta en marcha',
   ])
   titleRow.height = 24
-  ws.mergeCells(1, 1, 1, 7)
+  ws.mergeCells(1, 1, 1, 8)
   titleRow.getCell(1).font = {
     bold: true,
     size: 14,
@@ -97,7 +98,7 @@ function addSsbSummarySheet(
   const sub = ws.addRow([
     `Informe: ${report.title || 'Alimentaciones puesta en marcha'} · ${nSsb} SSB + ${nTrf} TRF (únicos, sin repeticiones) · destinos: ${report.resolvedIds.length} · TRF: aguas abajo de LCS, excl. TRF-6PWS y TRF interiores de SSB`,
   ])
-  ws.mergeCells(2, 1, 2, 7)
+  ws.mergeCells(2, 1, 2, 8)
   sub.getCell(1).font = {
     size: 9,
     italic: true,
@@ -111,6 +112,7 @@ function addSsbSummarySheet(
     'Código NME',
     'Local',
     'Nombre local',
+    'Bloque',
     'Notas',
   ])
   paintHeader(header)
@@ -120,6 +122,7 @@ function addSsbSummarySheet(
       '—',
       '—',
       'No aparecen SSB ni TRF (LCS→…) en las cadenas de este listado',
+      '—',
       '—',
       '—',
       '—',
@@ -144,6 +147,7 @@ function addSsbSummarySheet(
       b.nme674Id,
       b.local,
       b.localName,
+      b.block,
       b.notes,
     ])
     const bg = b.kind === 'TRF' ? 'E3F2FD' : COLORS.ssbBg
@@ -160,21 +164,25 @@ function addSsbSummarySheet(
         color: { argb: `FF${COLORS.text}` },
         bold: col === 1 || col === 2,
       }
-      cell.alignment = { vertical: 'top', horizontal: 'left', wrapText: col === 7 }
+      cell.alignment = {
+        vertical: 'top',
+        horizontal: 'left',
+        wrapText: col === 8,
+      }
       cell.border = thinBorder()
     })
   }
 
   ws.autoFilter = {
     from: { row: 3, column: 1 },
-    to: { row: 3 + Math.max(boards.length, 1), column: 7 },
+    to: { row: 3 + Math.max(boards.length, 1), column: 8 },
   }
 }
 
 /**
  * Excel de la tabla resumen: cadena completa por destino,
  * con colores, bordes y separación entre alimentaciones.
- * Incluye hoja «SSB y TRF» (únicos, con NME, local, nombre local y notas).
+ * Incluye hoja «SSB y TRF» (únicos, con NME, local, nombre local, bloque y notas).
  */
 export async function exportStartupTableExcel(
   report: StartupReport,

@@ -12,6 +12,7 @@ import {
   type FeedLineKind,
 } from './feedChain'
 import type { StartupGroup, StartupReport } from './types'
+import { resolveEquipmentBlock } from './localBlocks'
 
 /** Fila de la tabla resumen (un escalón de la cadena por fila). */
 export interface StartupTableRow {
@@ -162,6 +163,8 @@ export type StartupBoardRow = {
   nme674Id: string
   local: string
   localName: string
+  /** Bloque constructivo (compartimentos AL / GEN BLOQUE SSB). */
+  block: string
   /** Notas de inspección asociadas al equipo (y a sus interruptores). */
   notes: string
 }
@@ -267,13 +270,20 @@ function boardRowFromEquipment(
   data: DistributionData,
 ): StartupBoardRow {
   const eq = eqById.get(id)
+  const nme674Id = eq?.nme674Id?.trim() || '—'
+  const local = eq?.local?.trim() || '—'
   return {
     kind,
     equipmentId: id,
     name: eq?.name?.trim() || id,
-    nme674Id: eq?.nme674Id?.trim() || '—',
-    local: eq?.local?.trim() || '—',
+    nme674Id,
+    local,
     localName: eq?.localName?.trim() || '—',
+    block: resolveEquipmentBlock({
+      equipmentId: id,
+      nme674Id: nme674Id === '—' ? null : nme674Id,
+      local: local === '—' ? null : local,
+    }),
     notes: formatNotesForStartupBoard(id, notes, data),
   }
 }
