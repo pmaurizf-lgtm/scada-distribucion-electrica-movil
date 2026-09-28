@@ -62,7 +62,7 @@ import { LcsDualView } from './LcsDualView'
 import { SearchTreeView } from './SearchTreeView'
 import { exportSearchTreePdf } from '../utils/exportSearchTreePdf'
 import { SsbBoardView } from './SsbBoardView'
-import { eqEntregaClass, useEntregaOverlay } from '../entregas'
+import { EntregaSemaforo } from './EntregaSemaforo'
 
 export type LockTool = 'none' | 'lock' | 'unlock'
 
@@ -436,8 +436,6 @@ function BusDrop({
   const localFeed = feeds.find((c) => c.id === circuit.id) ?? circuit
   const localFlowing = energizedCircuitIds.has(localFeed.id)
   const eqEnergized = energizedEquipmentIds.has(equipment.id)
-  const entregaOverlay = useEntregaOverlay()
-  const eqEntrega = eqEntregaClass(equipment.id, entregaOverlay)
   const isAltLocal = localFeed.lineType === 'alternativa'
   const eqBalloon = useEquipInfoBalloon()
   const eqWrapRef = useRef<HTMLDivElement>(null)
@@ -537,11 +535,12 @@ function BusDrop({
           </div>
         )}
         <div
-          className={`equip-chassis equip-chassis--lcs${eqEnergized ? ' equip-chassis--live' : ''}${eqEntrega}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
+          className={`equip-chassis equip-chassis--lcs${eqEnergized ? ' equip-chassis--live' : ''}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
           {...dataFlowVoltageProps(equipment.id)}
           onDoubleClick={toggleExpand}
           aria-label={`${equipment.id} · doble clic para plegar`}
         >
+            <EntregaSemaforo equipmentId={equipment.id} />
             <div
               ref={(el) => {
                 eqWrapRef.current = el
@@ -666,11 +665,12 @@ function BusDrop({
         </div>
         <div className="hbus-drop__eq-row">
           <div
-            className={`equip-chassis equip-chassis--msb4sfs${eqEnergized ? ' equip-chassis--live' : ''}${eqEntrega}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
+            className={`equip-chassis equip-chassis--msb4sfs${eqEnergized ? ' equip-chassis--live' : ''}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
             {...dataFlowVoltageProps(equipment.id)}
             onDoubleClick={toggleExpand}
             aria-label={`${equipment.id} · doble clic para plegar`}
           >
+              <EntregaSemaforo equipmentId={equipment.id} />
             <div
               ref={(el) => {
                 eqWrapRef.current = el
@@ -817,11 +817,12 @@ function BusDrop({
         )}
         <div className="hbus-drop__eq-row">
           <div
-            className={`equip-chassis equip-chassis--ssb${eqEnergized ? ' equip-chassis--live' : ''}${eqEntrega}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
+            className={`equip-chassis equip-chassis--ssb${eqEnergized ? ' equip-chassis--live' : ''}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
             {...dataFlowVoltageProps(equipment.id)}
             onDoubleClick={toggleExpand}
             aria-label={`${equipment.id} · doble clic para plegar`}
           >
+              <EntregaSemaforo equipmentId={equipment.id} />
             {ssb2209 && (
               <span className="ssb2209-chassis-alt-riser" aria-hidden />
             )}

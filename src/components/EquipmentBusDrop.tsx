@@ -40,12 +40,8 @@ import {
 import { EquipmentBalloon } from './EquipmentBalloon'
 import { isSsb2Pws2209, hasSsb2209StructuredLayout } from '../abtDownstream/ssb2pws2209'
 import { isOutletSideOriginLive } from '../abtDownstream/ssbBoard'
-import {
-  eqBoardClass,
-  legBoardClass,
-  useEnergizationOverlay,
-} from '../energizations'
-import { eqEntregaClass, useEntregaOverlay } from '../entregas'
+import { eqBoardClass, legBoardClass, useEnergizationOverlay } from '../energizations'
+import { EntregaSemaforo } from './EntregaSemaforo'
 
 export type EquipFam = 'abt' | 'trf' | 'lcs' | 'sec' | 'eq'
 
@@ -323,11 +319,9 @@ export function EquipmentBusDrop({
     (qvsLegs != null && qvsLegs.length > 1) ||
     parallelLegs.length > 0
   const boardOverlay = useEnergizationOverlay()
-  const entregaOverlay = useEntregaOverlay()
   const localFlowing = energizedCircuitIds.has(localFeed.id)
   const eqEnergized = energizedEquipmentIds.has(equipment.id)
   const eqBoardLiveClass = eqBoardClass(equipment.id, boardOverlay)
-  const eqEntrega = eqEntregaClass(equipment.id, entregaOverlay)
   const isAltLocal = localFeed.lineType === 'alternativa'
   /** SSB abierto bajo otro cuadro: chasis dedicado (no cajita + board suelto). */
   const ssbChassisOpen =
@@ -546,11 +540,12 @@ export function EquipmentBusDrop({
       {ssbChassisOpen ? (
         <div className="hbus-drop__eq-row">
           <div
-            className={`equip-chassis equip-chassis--ssb${eqEnergized ? ' equip-chassis--live' : ''}${eqBoardLiveClass}${eqEntrega}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
+            className={`equip-chassis equip-chassis--ssb${eqEnergized ? ' equip-chassis--live' : ''}${eqBoardLiveClass}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
             {...dataFlowVoltageProps(equipment.id)}
             onDoubleClick={toggleExpand}
             aria-label={`${equipment.id} · doble clic para plegar`}
           >
+            <EntregaSemaforo equipmentId={equipment.id} />
             {is2209 && (
               <span className="ssb2209-chassis-alt-riser" aria-hidden />
             )}
@@ -598,7 +593,7 @@ export function EquipmentBusDrop({
             >
               <button
                 type="button"
-                className={`hbus-drop__eq hbus-drop__eq--fam-${equipFam}${expanded ? ' hbus-drop__eq--open' : ''}${eqEnergized ? ' hbus-drop__eq--live' : ''}${eqBoardLiveClass}${eqEntrega}${spare ? ' hbus-drop__eq--spare' : ''}`}
+                className={`hbus-drop__eq hbus-drop__eq--fam-${equipFam}${expanded ? ' hbus-drop__eq--open' : ''}${eqEnergized ? ' hbus-drop__eq--live' : ''}${eqBoardLiveClass}${spare ? ' hbus-drop__eq--spare' : ''}`}
                 data-equip={equipment.id}
                 aria-disabled={!canExpand}
                 aria-label={
@@ -614,6 +609,7 @@ export function EquipmentBusDrop({
                 }}
                 onDoubleClick={toggleExpand}
               >
+                <EntregaSemaforo equipmentId={equipment.id} />
                 <span className="hbus-drop__sym">
                   {spare ? 'R' : symbolFor(equipment.kind, equipment)}
                 </span>

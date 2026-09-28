@@ -49,7 +49,7 @@ import {
   dataFlowVoltageForBoardFeed,
   dataFlowVoltageProps,
 } from '../utils/flowVoltage'
-import { eqEntregaClass, useEntregaOverlay } from '../entregas'
+import { EntregaSemaforo } from './EntregaSemaforo'
 
 type FeedSyncVars = {
   feedCol: number
@@ -394,8 +394,6 @@ function LcsOutletDrop({
     isSsb2Pws2209(equipment.id) && hasSsb2209StructuredLayout(system690)
   const localFlowing = energizedCircuitIds.has(circuit.id)
   const eqEnergized = energizedEquipmentIds.has(equipment.id)
-  const entregaOverlay = useEntregaOverlay()
-  const eqEntrega = eqEntregaClass(equipment.id, entregaOverlay)
   const isAltLocal = circuit.lineType === 'alternativa'
   const equipFam = equipFamOf(equipment)
   const located = locateEquipmentId === equipment.id
@@ -570,11 +568,12 @@ function LcsOutletDrop({
         )}
         <div className="hbus-drop__eq-row">
           <div
-            className={`equip-chassis equip-chassis--ssb${eqEnergized ? ' equip-chassis--live' : ''}${eqEntrega}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
+            className={`equip-chassis equip-chassis--ssb${eqEnergized ? ' equip-chassis--live' : ''}${localFlowing ? ' equip-chassis--feed-flow' : ''}${isAltLocal ? ' equip-chassis--feed-alt' : ''}${located ? ' equip-chassis--locate' : ''}`}
             {...dataFlowVoltageProps(equipment.id)}
             onDoubleClick={foldSsb}
             aria-label={`${equipment.id} · doble clic para plegar`}
           >
+            <EntregaSemaforo equipmentId={equipment.id} />
             {is2209 && (
               <span className="ssb2209-chassis-alt-riser" aria-hidden />
             )}

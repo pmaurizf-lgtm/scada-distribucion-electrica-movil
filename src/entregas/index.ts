@@ -24,7 +24,8 @@ import {
 } from './types'
 
 export type { EntregaEntry, EntregaImportStats, EntregaOverlayState }
-export { eqEntregaClass, isEntregaLayerVisible } from './boardClasses'
+export { eqEntregaClass, eqEntregaState, isEntregaLayerVisible } from './boardClasses'
+export type { EntregaState } from './boardClasses'
 export { parseEntregasExcel } from './parseEntregasExcel'
 export { resolveEntregas, mergeEntregaEntries } from './resolveEntregas'
 export { entregaEntriesFingerprint } from './persistence'
