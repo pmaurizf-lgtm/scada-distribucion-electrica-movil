@@ -895,46 +895,22 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
       <div className="app-shell__chrome">
         <header className="topbar">
           <div className="topbar__brand">
-            <NavantiaLogo />
-            <div className="topbar__brand-meta">
-              <p className="topbar__brand-title">
-                {vesselById(vesselId).label}
-              </p>
-              <p className="topbar__brand-sub">
-                {circuitListRevisionLabel(topo.listRevision)}
-                {topo.sessionOverride ? ' · sesión' : ''}
-                {energ.hasData
-                  ? energ.enabled
-                    ? ' · energizaciones on'
-                    : ' · energizaciones (capa off)'
-                  : ''}
-              </p>
-            </div>
-          </div>
-
-          {isMobile && !chromeCollapsed && (
-            <button
-              type="button"
-              className="btn topbar__chrome-toggle"
-              aria-expanded={true}
-              onClick={() => setChromeCollapsed(true)}
-              title="Ocultar barra y trabajar a pantalla completa"
-            >
-              Ocultar ▴
-            </button>
-          )}
-
-          <div className="topbar__main">
-            <div className="topbar__row topbar__row--tools">
+            <div className="topbar__brand-lead">
+              <NavantiaLogo />
               <details
                 ref={appMenuRef}
                 className="app-menu"
               >
                 <summary
-                  className="btn app-menu__summary"
+                  className="app-menu__summary"
                   title="Opciones de la aplicación"
+                  aria-label="Menú"
                 >
-                  Menú
+                  <span className="app-menu__burger" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
                 </summary>
                 <div className="app-menu__panel" role="menu">
                   <label className="app-menu__field">
@@ -1230,6 +1206,37 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                   </button>
                 </div>
               </details>
+            </div>
+            <div className="topbar__brand-meta">
+              <p className="topbar__brand-title">
+                {vesselById(vesselId).label}
+              </p>
+              <p className="topbar__brand-sub">
+                {circuitListRevisionLabel(topo.listRevision)}
+                {topo.sessionOverride ? ' · sesión' : ''}
+                {energ.hasData
+                  ? energ.enabled
+                    ? ' · energizaciones on'
+                    : ' · energizaciones (capa off)'
+                  : ''}
+              </p>
+            </div>
+          </div>
+
+          {isMobile && !chromeCollapsed && (
+            <button
+              type="button"
+              className="btn topbar__chrome-toggle"
+              aria-expanded={true}
+              onClick={() => setChromeCollapsed(true)}
+              title="Ocultar barra y trabajar a pantalla completa"
+            >
+              Ocultar ▴
+            </button>
+          )}
+
+          <div className="topbar__main">
+            <div className="topbar__row topbar__row--tools">
 
               {isAdmin && (
                 <>

@@ -38,13 +38,23 @@
   line-height: 1.2;
 }
 
-.app-shell--mobile .topbar__brand-meta p,
-.app-shell--mobile .topbar__brand-sub {
+.app-shell--mobile .topbar__brand-meta p {
   font-size: 0.65rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 11rem;
+}
+
+.app-shell--mobile .topbar__vessel {
+  margin-top: 0.15rem;
+  max-width: 100%;
+}
+
+.app-shell--mobile .topbar__vessel-select {
+  max-width: 100%;
+  min-height: 2rem;
+  font-size: 0.72rem;
 }
 
 .app-shell--mobile .topbar__chrome-toggle {
@@ -118,31 +128,42 @@ html.scada-mobile:has(.notes-modal-backdrop) .chrome-fab {
   justify-content: stretch;
 }
 
+.app-shell--mobile .topbar__console {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  width: 100%;
+}
+
 .app-shell--mobile .app-menu {
   flex: 0 0 auto;
 }
 
 .app-shell--mobile .app-menu__summary {
-  min-height: var(--touch-min);
+  width: var(--touch-min);
+  height: var(--touch-min);
+}
+
+.app-shell--mobile .app-menu__burger {
+  width: 1.2rem;
+  gap: 0.28rem;
 }
 
 .app-shell--mobile .app-menu__panel {
   left: 0;
   right: auto;
   min-width: min(18rem, calc(100vw - 1.5rem));
-  max-height: min(72vh, 34rem);
+  max-height: min(65vh, 28rem);
 }
 
 .app-shell--mobile .app-menu__item,
-.app-shell--mobile .app-menu__sub-summary {
+.app-shell--mobile .app-menu__sub-summary,
+.app-shell--mobile .app-menu__select {
   min-height: var(--touch-min);
-  padding: 0.55rem 0.65rem;
-  font-size: 0.85rem;
 }
 
-.app-shell--mobile .app-menu__select {
-  min-height: 2.4rem;
-  font-size: 0.8rem;
+.app-shell--mobile .topbar__actions {
+  flex-wrap: wrap;
 }
 
 .app-shell--mobile .btn,
@@ -292,9 +313,16 @@ html.scada-mobile:has(.notes-modal-backdrop) .chrome-fab {
   }
 }
 
-/* Menú unificado (candados / actualizar / energizaciones anidados) */
-.app-shell--mobile .app-menu__sub-panel {
-  padding-bottom: 0.45rem;
+/* Herramientas (menú unificado / simulación / candados) */
+.app-shell--mobile .topbar__actions--sim {
+  width: 100%;
+}
+
+.app-shell--mobile .candados-menu__panel,
+.app-shell--mobile .app-menu__panel {
+  right: auto;
+  left: 0;
+  min-width: min(16rem, calc(100vw - 2rem));
 }
 
 .app-shell--mobile .topbar__legend {
@@ -306,7 +334,7 @@ html.scada-mobile:has(.notes-modal-backdrop) .chrome-fab {
   border-left: 0;
   white-space: normal;
   width: 100%;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
 }
 
 .app-shell--mobile .casc__focus-bar--feeds {
