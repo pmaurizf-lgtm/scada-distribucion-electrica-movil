@@ -3379,43 +3379,48 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
 .hbus-drop__eq--entrega-ko::before,
 .equip-chassis--entrega-ko::before,
 .hbus-drop__eq--entrega-ok::before,
-.equip-chassis--entrega-ok::before {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 9px solid #e53935;
-  z-index: 8;
-  pointer-events: none;
-}
-
-.hbus-drop__eq--entrega-ok::before,
-.equip-chassis--entrega-ok::before {
-  border-bottom-color: #ef6c00;
-}
-
+.equip-chassis--entrega-ok::before,
 .hbus-drop__eq--entrega-done::after,
 .equip-chassis--entrega-done::after {
   content: '';
   position: absolute;
-  top: 3px;
-  left: 15px;
+  top: 2px;
+  left: 2px;
   width: 0;
   height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 9px solid #2e7d32;
-  z-index: 8;
+  border-style: solid;
+  border-width: 0 7px 12px;
+  border-color: transparent transparent #ff0033 transparent;
+  z-index: 12;
   pointer-events: none;
+  filter:
+    drop-shadow(0 0 0.5px #000)
+    drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.85))
+    drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+/* Instalación incompleta → rojo vivo */
+.hbus-drop__eq--entrega-ko::before,
+.equip-chassis--entrega-ko::before {
+  border-bottom-color: #ff0033;
+}
+
+/* Instalación completa → ámbar/dorado (no se confunde con el rojo) */
+.hbus-drop__eq--entrega-ok::before,
+.equip-chassis--entrega-ok::before {
+  border-bottom-color: #ffcc00;
+}
+
+/* Entregado → verde neón, a la derecha del de instalación */
+.hbus-drop__eq--entrega-done::after,
+.equip-chassis--entrega-done::after {
+  left: 16px;
+  border-bottom-color: #00e676;
 }
 
 .hbus-drop__eq--entrega-done:not(.hbus-drop__eq--entrega-ko):not(.hbus-drop__eq--entrega-ok)::after,
 .equip-chassis--entrega-done:not(.equip-chassis--entrega-ko):not(.equip-chassis--entrega-ok)::after {
-  left: 3px;
+  left: 2px;
 }
 
 .casc-brk--flash {
