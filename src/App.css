@@ -3375,6 +3375,49 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   opacity: 1;
 }
 
+/* —— Estado entregas: triángulos esquina superior izquierda —— */
+.hbus-drop__eq--entrega-ko::before,
+.equip-chassis--entrega-ko::before,
+.hbus-drop__eq--entrega-ok::before,
+.equip-chassis--entrega-ok::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid #e53935;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.hbus-drop__eq--entrega-ok::before,
+.equip-chassis--entrega-ok::before {
+  border-bottom-color: #ef6c00;
+}
+
+.hbus-drop__eq--entrega-done::after,
+.equip-chassis--entrega-done::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 15px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid #2e7d32;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.hbus-drop__eq--entrega-done:not(.hbus-drop__eq--entrega-ko):not(.hbus-drop__eq--entrega-ok)::after,
+.equip-chassis--entrega-done:not(.equip-chassis--entrega-ko):not(.equip-chassis--entrega-ok)::after {
+  left: 3px;
+}
+
 .casc-brk--flash {
   animation: brk-flash 0.8s ease 2;
 }

@@ -38,6 +38,17 @@ service cloud.firestore {
         && request.resource.data.updatedAt is string;
       allow delete: if false;
     }
+
+    /* Estado entregas · un doc de estado por buque */
+    match /vessels/{vesselId}/entregas/{docId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && docId == 'state'
+        && request.resource.data.vesselId == vesselId
+        && request.resource.data.updatedAt is string;
+      allow delete: if false;
+    }
+
     /* Marcas de plano de cubierta (compartidas entre buques) */
     match /shared/{docId} {
       allow read: if signedIn();

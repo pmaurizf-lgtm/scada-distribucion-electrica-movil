@@ -77,6 +77,16 @@ import {
   useEnergizationOverlay,
 } from '../energizations'
 import { useEnergizationsCloudSync } from '../energizations/useEnergizationsCloudSync'
+import {
+  clearEntregas,
+  isEntregaLayerVisible,
+  loadEntregasFromExcel,
+  refreshEntregasForTopology,
+  setEntregasEnabled,
+  setEntregasVessel,
+  useEntregaOverlay,
+} from '../entregas'
+import { useEntregasCloudSync } from '../entregas/useEntregasCloudSync'
 
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 2.5
@@ -84,6 +94,7 @@ const ZOOM_STEP = 0.15
 const MAX_LOCK_EXCEL_BYTES = 8 * 1024 * 1024
 const MAX_CIRCUIT_LIST_BYTES = 32 * 1024 * 1024
 const MAX_ENERGIZATION_BYTES = 16 * 1024 * 1024
+const MAX_ENTREGAS_BYTES = 16 * 1024 * 1024
 const ALLOWED_LOCK_EXCEL_RE = /\.(xlsx|xls|xlsm)$/i
 
 const REST_STATUS_SOURCE = 'reposo · todos abiertos · gens parados'
@@ -114,6 +125,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const circuitListInputRef = useRef<HTMLInputElement>(null)
   const energizationInputRef = useRef<HTMLInputElement>(null)
+  const entregasInputRef = useRef<HTMLInputElement>(null)
   const candadosDetailsRef = useRef<HTMLDetailsElement>(null)
   const appMenuRef = useRef<HTMLDetailsElement>(null)
   const cascadeRef = useRef<CascadeViewHandle>(null)
@@ -123,9 +135,11 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const { signOutUser, isAdmin } = useAuth()
   const topo = useTopologyState()
   const energ = useEnergizationOverlay()
+  const entregas = useEntregaOverlay()
 
   useEffect(() => {
     setEnergizationsVessel(vesselId, system690)
+    setEntregasVessel(vesselId, system690)
   }, [vesselId])
 
   const [notesPanelOpen, setNotesPanelOpen] = useState(false)
@@ -216,6 +230,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     applyRemoteLocks,
   )
   useEnergizationsCloudSync(vesselId)
+  useEntregasCloudSync(vesselId)
 
   const bumpPublishLocks = useCallback(
     (
@@ -310,9 +325,19 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   }, [energ.notice])
 
   useEffect(() => {
+    if (!entregas.notice) return
+    setSearchHint(entregas.notice)
+  }, [entregas.notice])
+
+  useEffect(() => {
     if (!energ.hasData) return
     refreshEnergizationsForTopology(system690)
   }, [topo.revision, energ.hasData])
+
+  useEffect(() => {
+    if (!entregas.hasData) return
+    refreshEntregasForTopology(system690)
+  }, [topo.revision, entregas.hasData])
 
   useEffect(() => {
     if (isMobile) {
@@ -745,6 +770,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
         const buf = await file.arrayBuffer()
         loadTopologyFromExcel(buf, file.name)
         refreshEnergizationsForTopology(system690)
+        refreshEntregasForTopology(system690)
       } catch (err) {
         setSearchHint(
           err instanceof Error
@@ -761,6 +787,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const handleRestoreEmbeddedTopology = useCallback(() => {
     resetTopologyToEmbedded()
     refreshEnergizationsForTopology(system690)
+    refreshEntregasForTopology(system690)
   }, [])
 
   const handleCircuitListRevisionChange = useCallback(
@@ -769,6 +796,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
       if (next !== 'C' && next !== 'D') return
       selectCircuitListRevision(next)
       refreshEnergizationsForTopology(system690)
+      refreshEntregasForTopology(system690)
     },
     [],
   )
@@ -810,6 +838,49 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
           err instanceof Error
             ? err.message
             : 'No se pudo leer el Excel de energizaciones.',
+        )
+      }
+    },
+    [vesselId],
+  )
+
+  const handleEntregasExcelChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      e.target.value = ''
+      if (!file) return
+      if (!ALLOWED_LOCK_EXCEL_RE.test(file.name) || !file.size) {
+        setSearchHint('Archivo de estado entregas no válido (.xlsx / .xlsm).')
+        return
+      }
+      if (file.size > MAX_ENTREGAS_BYTES) {
+        setSearchHint(
+          `Excel demasiado grande (${Math.round(file.size / 1024 / 1024)} MiB). Máx. ${Math.round(
+            MAX_ENTREGAS_BYTES / 1024 / 1024,
+          )} MiB.`,
+        )
+        return
+      }
+      setSearchHint('Cargando estado entregas…')
+      try {
+        const buf = await file.arrayBuffer()
+        const stats = loadEntregasFromExcel(
+          buf,
+          file.name,
+          system690,
+          vesselId,
+        )
+        if (stats.unchanged) return
+        if (stats.matched === 0 && stats.upserted === 0) {
+          setSearchHint(
+            `Ningún equipo del Excel coincide con el unifilar (${stats.skippedUnknown} filas leídas). Col. A = equipo, H = instalación SI/NO.`,
+          )
+        }
+      } catch (err) {
+        setSearchHint(
+          err instanceof Error
+            ? err.message
+            : 'No se pudo leer el Excel de estado entregas.',
         )
       }
     },
@@ -869,6 +940,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   }
 
   const boardLayerOn = isBoardLayerVisible(energ)
+  const entregaLayerOn = isEntregaLayerVisible(entregas)
 
   const shellClass = [
     'app-shell',
@@ -876,6 +948,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     isMobile ? 'app-shell--mobile' : '',
     isMobile && chromeCollapsed ? 'app-shell--chrome-collapsed' : '',
     boardLayerOn ? 'scada--board-energizations' : '',
+    entregaLayerOn ? 'scada--entregas' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -1180,6 +1253,53 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                     </details>
                   )}
 
+                  {isAdmin && (
+                    <details className="app-menu__sub">
+                      <summary
+                        className={`app-menu__sub-summary${entregaLayerOn ? ' app-menu__sub-summary--on' : ''}`}
+                        title="Col. A equipo · H instalación SI/NO · col. Entregado (opcional) SI/NO. Cada Excel se acumula."
+                      >
+                        Estado entregas
+                      </summary>
+                      <div className="app-menu__sub-panel">
+                        <button
+                          type="button"
+                          className={`app-menu__item${entregaLayerOn ? ' app-menu__item--on' : ''}`}
+                          disabled={!entregas.hasData}
+                          onClick={() => {
+                            setEntregasEnabled(!entregas.enabled)
+                            closeAppMenu()
+                          }}
+                        >
+                          {entregaLayerOn ? 'Desactivar capa' : 'Activar capa'}
+                        </button>
+                        <button
+                          type="button"
+                          className="app-menu__item"
+                          title="Suma equipos al listado ya verificado (no sustituye)"
+                          onClick={() => {
+                            entregasInputRef.current?.click()
+                            closeAppMenu()
+                          }}
+                        >
+                          Cargar Excel…
+                        </button>
+                        <button
+                          type="button"
+                          className="app-menu__item"
+                          disabled={!entregas.hasData}
+                          onClick={() => {
+                            clearEntregas()
+                            setSearchHint('Estado entregas borrado.')
+                            closeAppMenu()
+                          }}
+                        >
+                          Borrar datos
+                        </button>
+                      </div>
+                    </details>
+                  )}
+
                   <div className="app-menu__divider" role="separator" />
 
                   <button
@@ -1218,6 +1338,11 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                   ? energ.enabled
                     ? ' · energizaciones on'
                     : ' · energizaciones (capa off)'
+                  : ''}
+                {entregas.hasData
+                  ? entregas.enabled
+                    ? ' · entregas on'
+                    : ' · entregas (capa off)'
                   : ''}
               </p>
             </div>
@@ -1260,6 +1385,13 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                     accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                     hidden
                     onChange={(e) => void handleEnergizationExcelChange(e)}
+                  />
+                  <input
+                    ref={entregasInputRef}
+                    type="file"
+                    accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    hidden
+                    onChange={(e) => void handleEntregasExcelChange(e)}
                   />
                 </>
               )}
