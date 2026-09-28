@@ -6,7 +6,8 @@ export function isEntregaLayerVisible(overlay: EntregaOverlayState): boolean {
 
 /**
  * Clases para el marco del equipo (.hbus-drop__eq / .equip-chassis).
- * Rojo = instalación incompleta · naranja = completa · verde = entregado.
+ * Semáforo: rojo = incompleta · ámbar = completa · verde = entregado
+ * (una sola luz encendida; entregado tiene prioridad).
  */
 export function eqEntregaClass(
   equipmentId: string,
@@ -15,23 +16,11 @@ export function eqEntregaClass(
   if (!isEntregaLayerVisible(overlay)) return ''
   const flags = overlay.byEquipmentId.get(equipmentId)
   if (!flags) return ''
-  const parts: string[] = []
-  if (flags.installComplete) {
-    parts.push(
-      'hbus-drop__eq--entrega-ok',
-      'equip-chassis--entrega-ok',
-    )
-  } else {
-    parts.push(
-      'hbus-drop__eq--entrega-ko',
-      'equip-chassis--entrega-ko',
-    )
-  }
   if (flags.delivered) {
-    parts.push(
-      'hbus-drop__eq--entrega-done',
-      'equip-chassis--entrega-done',
-    )
+    return ' hbus-drop__eq--entrega-done equip-chassis--entrega-done'
   }
-  return parts.length ? ` ${parts.join(' ')}` : ''
+  if (flags.installComplete) {
+    return ' hbus-drop__eq--entrega-ok equip-chassis--entrega-ok'
+  }
+  return ' hbus-drop__eq--entrega-ko equip-chassis--entrega-ko'
 }
