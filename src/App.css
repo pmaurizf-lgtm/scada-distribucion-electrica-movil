@@ -971,6 +971,13 @@ body {
   letter-spacing: 0.01em;
 }
 
+.topbar__brand-sub {
+  margin: 0.1rem 0 0 !important;
+  font-size: 0.68rem !important;
+  color: var(--muted) !important;
+  line-height: 1.3;
+}
+
 .topbar h1 {
   margin: 0;
   font-size: 1.05rem;
@@ -1327,6 +1334,185 @@ body {
 .candados-menu__item--on {
   background: rgba(214, 69, 69, 0.2);
   color: #f0a0a0;
+}
+
+/* Menú unificado de la topbar */
+.app-menu {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.app-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.app-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.app-menu__summary::after {
+  content: ' ▾';
+  opacity: 0.75;
+  font-size: 0.72em;
+}
+
+.app-menu[open] > .app-menu__summary {
+  background: rgba(230, 194, 0, 0.14);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.app-menu__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 15.5rem;
+  max-width: min(22rem, 94vw);
+  max-height: min(70vh, 32rem);
+  overflow: auto;
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated, #1a222c);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+.app-menu__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0.25rem 0.35rem 0.35rem;
+}
+
+.app-menu__label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app-menu__select {
+  width: 100%;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--text);
+  background: var(--bg, #121820);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.35rem 0.45rem;
+  cursor: pointer;
+}
+
+.app-menu__select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  outline-offset: 1px;
+}
+
+.app-menu__divider {
+  height: 1px;
+  margin: 0.25rem 0.2rem;
+  background: color-mix(in srgb, var(--border) 85%, transparent);
+  border: 0;
+}
+
+.app-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app-menu__item:hover:not(:disabled) {
+  background: rgba(230, 194, 0, 0.12);
+}
+
+.app-menu__item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.app-menu__item--on {
+  background: rgba(230, 194, 0, 0.16);
+  color: color-mix(in srgb, var(--accent) 85%, var(--text));
+}
+
+.app-menu__meta {
+  margin: 0 0 0.2rem;
+  padding: 0.3rem 0.45rem 0.35rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  color: var(--muted, #8fa39b);
+  font-size: 0.66rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.app-menu__sub {
+  margin: 0.1rem 0;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--bg, #121820) 55%, transparent);
+}
+
+.app-menu__sub--active {
+  border-color: color-mix(in srgb, var(--prot-closed, #d64545) 55%, var(--border));
+}
+
+.app-menu__sub > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.app-menu__sub > summary::-webkit-details-marker {
+  display: none;
+}
+
+.app-menu__sub-summary {
+  display: block;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  border-radius: 4px;
+}
+
+.app-menu__sub-summary::after {
+  content: ' ▸';
+  opacity: 0.65;
+  font-size: 0.72em;
+}
+
+.app-menu__sub[open] > .app-menu__sub-summary::after {
+  content: ' ▾';
+}
+
+.app-menu__sub-summary--on,
+.app-menu__sub--active > .app-menu__sub-summary {
+  color: color-mix(in srgb, var(--accent) 80%, var(--text));
+}
+
+.app-menu__sub-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.15rem 0.25rem 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 
 .status-actions {

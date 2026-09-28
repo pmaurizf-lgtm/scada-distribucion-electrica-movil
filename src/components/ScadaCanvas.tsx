@@ -115,6 +115,7 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
   const circuitListInputRef = useRef<HTMLInputElement>(null)
   const energizationInputRef = useRef<HTMLInputElement>(null)
   const candadosDetailsRef = useRef<HTMLDetailsElement>(null)
+  const appMenuRef = useRef<HTMLDetailsElement>(null)
   const cascadeRef = useRef<CascadeViewHandle>(null)
   const isMobile = useIsMobileUi()
   const { notes } = useNotes()
@@ -592,6 +593,17 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
     if (el) el.open = false
   }, [])
 
+  const closeAppMenu = useCallback(() => {
+    const el = appMenuRef.current
+    if (el) el.open = false
+    closeCandadosMenu()
+  }, [closeCandadosMenu])
+
+  const openNotesUnresolved = notes.reduce(
+    (sum, n) => sum + n.lines.filter((l) => !l.resolved).length,
+    0,
+  )
+
   const handleLockExcelChange = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
@@ -888,50 +900,15 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
               <p className="topbar__brand-title">
                 {vesselById(vesselId).label}
               </p>
-              <label className="topbar__vessel topbar__circuit-list">
-                <span className="topbar__vessel-label">Lista circuitos</span>
-                <select
-                  className="topbar__vessel-select topbar__circuit-list-select"
-                  value={topo.listRevision}
-                  aria-label="Revisión de lista de circuitos"
-                  title="El unifilar y los informes usan la revisión seleccionada"
-                  onChange={handleCircuitListRevisionChange}
-                >
-                  <option value="C">
-                    {circuitListRevisionLabel('C')}
-                  </option>
-                  <option value="D">
-                    {circuitListRevisionLabel('D')}
-                  </option>
-                </select>
-              </label>
-              <p>
-                {topo.sessionOverride ? 'Rev.D · sesión (no guardada)' : ''}
+              <p className="topbar__brand-sub">
+                {circuitListRevisionLabel(topo.listRevision)}
+                {topo.sessionOverride ? ' · sesión' : ''}
                 {energ.hasData
-                  ? `${topo.sessionOverride ? ' · ' : ''}${
-                      energ.enabled
-                        ? `energizaciones activas (${vesselId})`
-                        : `energizaciones memorizadas (${vesselId}, capa off)`
-                    }`
+                  ? energ.enabled
+                    ? ' · energizaciones on'
+                    : ' · energizaciones (capa off)'
                   : ''}
               </p>
-              <label className="topbar__vessel">
-                <span className="topbar__vessel-label">Buque</span>
-                <select
-                  className="topbar__vessel-select"
-                  value={vesselId}
-                  aria-label="Cambiar buque"
-                  onChange={(e) =>
-                    switchVessel(e.target.value as VesselId)
-                  }
-                >
-                  {VESSELS.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </div>
           </div>
 
@@ -949,77 +926,107 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
 
           <div className="topbar__main">
             <div className="topbar__row topbar__row--tools">
-              <div
-                className="topbar__console"
-                role="group"
-                aria-label="Herramientas"
+              <details
+                ref={appMenuRef}
+                className="app-menu"
               >
-                <div
-                  className="topbar__actions topbar__actions--view"
-                  role="group"
-                  aria-label="Vista"
+                <summary
+                  className="btn app-menu__summary"
+                  title="Opciones de la aplicación"
                 >
+                  Menú
+                </summary>
+                <div className="app-menu__panel" role="menu">
+                  <label className="app-menu__field">
+                    <span className="app-menu__label">Lista circuitos</span>
+                    <select
+                      className="app-menu__select"
+                      value={topo.listRevision}
+                      aria-label="Revisión de lista de circuitos"
+                      title="El unifilar y los informes usan la revisión seleccionada"
+                      onChange={handleCircuitListRevisionChange}
+                    >
+                      <option value="C">
+                        {circuitListRevisionLabel('C')}
+                      </option>
+                      <option value="D">
+                        {circuitListRevisionLabel('D')}
+                      </option>
+                    </select>
+                  </label>
+
+                  <label className="app-menu__field">
+                    <span className="app-menu__label">Buque</span>
+                    <select
+                      className="app-menu__select"
+                      value={vesselId}
+                      aria-label="Cambiar buque"
+                      onChange={(e) => {
+                        switchVessel(e.target.value as VesselId)
+                        closeAppMenu()
+                      }}
+                    >
+                      {VESSELS.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="app-menu__divider" role="separator" />
+
                   <button
                     type="button"
-                    className="btn"
-                    onClick={collapseAll}
-                    title="Plegar todos los cuadros y equipos del unifilar"
-                  >
-                    Plegar todo
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn${startupMode ? ' btn--active' : ''}`}
+                    role="menuitem"
+                    className={`app-menu__item${startupMode ? ' app-menu__item--on' : ''}`}
                     onClick={() => {
                       setStartupMode(true)
+                      closeAppMenu()
                       if (isMobile) setChromeCollapsed(true)
                     }}
-                    title="Informe de alimentaciones para puesta en marcha de sistemas"
                   >
                     Puesta en marcha
                   </button>
                   <button
                     type="button"
-                    className={`btn${notesPanelOpen ? ' btn--active' : ''}`}
+                    role="menuitem"
+                    className={`app-menu__item${notesPanelOpen ? ' app-menu__item--on' : ''}`}
                     onClick={() => {
                       setNotesPanelOpen(true)
+                      closeAppMenu()
                       if (isMobile) setChromeCollapsed(true)
                     }}
-                    title="Notas de revisión del buque (se sincronizan con red)"
                   >
                     Notas
-                    {notes.reduce(
-                      (sum, n) => sum + n.lines.filter((l) => !l.resolved).length,
-                      0,
-                    ) > 0 ? (
+                    {openNotesUnresolved > 0 ? (
                       <span className="notes-badge notes-badge--topbar">
-                        {notes.reduce(
-                          (sum, n) =>
-                            sum + n.lines.filter((l) => !l.resolved).length,
-                          0,
-                        )}
+                        {openNotesUnresolved}
                       </span>
                     ) : null}
                   </button>
                   <button
                     type="button"
-                    className="btn"
+                    role="menuitem"
+                    className="app-menu__item"
                     onClick={() => {
                       requestOpenDeckPlan()
+                      closeAppMenu()
                       if (isMobile) setChromeCollapsed(true)
                     }}
-                    title="Consultar planos de cubierta del buque"
                   >
                     Planos
                   </button>
                   <button
                     type="button"
-                    className="btn"
-                    onClick={() =>
+                    role="menuitem"
+                    className="app-menu__item"
+                    onClick={() => {
                       openProfilePrompt(
                         'Edita el nombre que firmará las notas de revisión.',
                       )
-                    }
+                      closeAppMenu()
+                    }}
                     title={
                       displayName
                         ? `Usuario: ${displayName}`
@@ -1027,241 +1034,229 @@ export function ScadaCanvas({ vesselId, onVesselChange }: ScadaCanvasProps) {
                     }
                   >
                     Usuario
+                    {displayName ? ` · ${displayName}` : ''}
                     {isAdmin ? ' · Admin' : ''}
                   </button>
+
+                  <div className="app-menu__divider" role="separator" />
+
                   <button
                     type="button"
-                    className="btn"
-                    onClick={() => void signOutUser()}
-                    title="Cerrar sesión"
+                    role="menuitem"
+                    className={`app-menu__item${simulationActive ? ' app-menu__item--on' : ''}`}
+                    onClick={() => {
+                      handleSimulateToggle()
+                      closeAppMenu()
+                    }}
                   >
-                    Salir
+                    {simulationActive ? 'Dejar de simular' : 'Simular estado'}
                   </button>
-                </div>
-                <div
-                  className="topbar__actions topbar__actions--sim"
-                  role="group"
-                  aria-label="Simulación"
-                >
-                    <button
-                      type="button"
-                      className={`btn${simulationActive ? ' btn--active' : ''}`}
-                      onClick={handleSimulateToggle}
-                      title={
-                        simulationActive
-                          ? 'Desactivar simulación (interruptores no operables)'
-                          : 'Activar simulación para operar interruptores y generadores'
-                      }
-                    >
-                      {simulationActive ? 'Dejar de simular' : 'Simular estado'}
-                    </button>
-                    {isAdmin && (
-                    <>
+
+                  {isAdmin && (
                     <details
                       ref={candadosDetailsRef}
-                      className={`candados-menu${lockTool !== 'none' ? ' candados-menu--active' : ''}`}
+                      className={`app-menu__sub${lockTool !== 'none' ? ' app-menu__sub--active' : ''}`}
                     >
-                      <summary
-                        className={`btn btn--lock${lockTool !== 'none' ? ' btn--active' : ''}`}
-                        title="Poner / quitar candado o cargar lista desde Excel (solo admin)"
-                      >
+                      <summary className="app-menu__sub-summary">
                         Candados
+                        {lockTool !== 'none' ? ' · activo' : ''}
                       </summary>
-                      <div className="candados-menu__panel" role="menu">
-                        <p className="candados-menu__meta" title={locksFileName ?? undefined}>
+                      <div className="app-menu__sub-panel">
+                        <p
+                          className="app-menu__meta"
+                          title={locksFileName ?? undefined}
+                        >
                           {locksFileName
                             ? `Archivo: ${locksFileName}`
                             : 'Archivo: (ningún Excel cargado)'}
                           {locksUpdatedAt > '1970-01-01T00:00:00.000Z' && (
                             <>
                               <br />
-                              <span className="candados-menu__meta-time">
-                                Actualizado:{' '}
-                                {new Date(locksUpdatedAt).toLocaleString(
-                                  'es-ES',
-                                  {
-                                    dateStyle: 'short',
-                                    timeStyle: 'short',
-                                  },
-                                )}
-                              </span>
+                              Actualizado:{' '}
+                              {new Date(locksUpdatedAt).toLocaleString(
+                                'es-ES',
+                                {
+                                  dateStyle: 'short',
+                                  timeStyle: 'short',
+                                },
+                              )}
                             </>
                           )}
                           <br />
-                          <span className="candados-menu__meta-count">
-                            {lockedCircuits.size} interruptores con candado
-                          </span>
+                          {lockedCircuits.size} interruptores con candado
                         </p>
                         <button
                           type="button"
-                          role="menuitem"
-                          className={`candados-menu__item${lockTool === 'lock' ? ' candados-menu__item--on' : ''}`}
+                          className={`app-menu__item${lockTool === 'lock' ? ' app-menu__item--on' : ''}`}
                           disabled={!simulationActive}
-                          title={
-                            simulationActive
-                              ? 'Modo: pulsa un interruptor para abrirlo y bloquearlo'
-                              : 'Activa «Simular estado» primero'
-                          }
                           onClick={() => {
                             setLockTool((t) => (t === 'lock' ? 'none' : 'lock'))
-                            closeCandadosMenu()
+                            closeAppMenu()
                           }}
                         >
                           Poner candado
                         </button>
                         <button
                           type="button"
-                          role="menuitem"
-                          className={`candados-menu__item${lockTool === 'unlock' ? ' candados-menu__item--on' : ''}`}
+                          className={`app-menu__item${lockTool === 'unlock' ? ' app-menu__item--on' : ''}`}
                           disabled={!simulationActive}
-                          title={
-                            simulationActive
-                              ? 'Modo: pulsa un interruptor bloqueado para liberarlo'
-                              : 'Activa «Simular estado» primero'
-                          }
                           onClick={() => {
                             setLockTool((t) =>
                               t === 'unlock' ? 'none' : 'unlock',
                             )
-                            closeCandadosMenu()
+                            closeAppMenu()
                           }}
                         >
                           Quitar candado
                         </button>
                         <button
                           type="button"
-                          role="menuitem"
-                          className="candados-menu__item"
-                          title="Excel LOTO: col. D interruptor, L nº candado; CCM cruza D con N (p. ej. 41Q1)"
-                          onClick={() => fileInputRef.current?.click()}
+                          className="app-menu__item"
+                          onClick={() => {
+                            fileInputRef.current?.click()
+                            closeAppMenu()
+                          }}
                         >
                           Cargar Excel…
                         </button>
                       </div>
                     </details>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                      hidden
-                      onChange={handleLockExcelChange}
-                    />
-                    </>
-                    )}
-                    {isAdmin && (
-                    <>
-                    <details className="candados-menu">
+                  )}
+
+                  {isAdmin && (
+                    <details className="app-menu__sub">
                       <summary
-                        className={`btn${topo.sessionOverride ? ' btn--active' : ''}`}
-                        title={
-                          topo.listRevision === 'D'
-                            ? 'Cargar una nueva lista Rev.D en el unifilar (solo esta sesión; no se guarda) — solo admin'
-                            : 'Selecciona Rev.D en «Lista circuitos» para cargar un Excel nuevo'
-                        }
+                        className={`app-menu__sub-summary${topo.sessionOverride ? ' app-menu__sub-summary--on' : ''}`}
                       >
-                        {topologyBusy ? 'Cargando…' : 'Actualizar Rev.D'}
+                        {topologyBusy ? 'Actualizar…' : 'Actualizar Rev.D'}
                       </summary>
-                      <div className="candados-menu__panel" role="menu">
+                      <div className="app-menu__sub-panel">
                         <button
                           type="button"
-                          role="menuitem"
-                          className="candados-menu__item"
+                          className="app-menu__item"
                           disabled={
                             topologyBusy || topo.listRevision !== 'D'
                           }
-                          title={
-                            topo.listRevision === 'D'
-                              ? 'Excel lista de circuitos (mismas columnas que el unifilar). Solo memoria de sesión sobre Rev.D.'
-                              : 'Cambia a Rev.D en el desplegable del topbar para habilitar la carga'
-                          }
-                          onClick={() => circuitListInputRef.current?.click()}
+                          onClick={() => {
+                            circuitListInputRef.current?.click()
+                            closeAppMenu()
+                          }}
                         >
                           Cargar Excel Rev.D…
                         </button>
                         <button
                           type="button"
-                          role="menuitem"
-                          className="candados-menu__item"
+                          className="app-menu__item"
                           disabled={!topo.sessionOverride || topologyBusy}
-                          title="Volver a la Rev.D embebida en la app"
-                          onClick={handleRestoreEmbeddedTopology}
+                          onClick={() => {
+                            handleRestoreEmbeddedTopology()
+                            closeAppMenu()
+                          }}
                         >
                           Restaurar Rev.D embebida
                         </button>
                       </div>
                     </details>
-                    <input
-                      ref={circuitListInputRef}
-                      type="file"
-                      accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                      hidden
-                      onChange={(e) => void handleCircuitListExcelChange(e)}
-                    />
-                    </>
-                    )}
-                    {isAdmin && (
-                    <>
-                    <details className="candados-menu">
+                  )}
+
+                  {isAdmin && (
+                    <details className="app-menu__sub">
                       <summary
-                        className={`btn${boardLayerOn ? ' btn--active' : ''}`}
-                        title={`Capa de energizaciones de ${vesselId} (Excel col. A código, E SI/NO) — solo admin`}
+                        className={`app-menu__sub-summary${boardLayerOn ? ' app-menu__sub-summary--on' : ''}`}
                       >
                         Energizaciones
                       </summary>
-                      <div className="candados-menu__panel" role="menu">
+                      <div className="app-menu__sub-panel">
                         <button
                           type="button"
-                          role="menuitem"
-                          className={`candados-menu__item${boardLayerOn ? ' candados-menu__item--on' : ''}`}
+                          className={`app-menu__item${boardLayerOn ? ' app-menu__item--on' : ''}`}
                           disabled={!energ.hasData}
-                          title={
-                            energ.hasData
-                              ? boardLayerOn
-                                ? 'Ocultar capa (datos memorizados)'
-                                : 'Mostrar capa sobre el unifilar'
-                              : 'Carga un Excel primero'
-                          }
-                          onClick={() =>
+                          onClick={() => {
                             setBoardEnergizationsEnabled(!energ.enabled)
-                          }
+                            closeAppMenu()
+                          }}
                         >
                           {boardLayerOn ? 'Desactivar capa' : 'Activar capa'}
                         </button>
                         <button
                           type="button"
-                          role="menuitem"
-                          className="candados-menu__item"
-                          title="ControlSeguimientoEnergizaciones: A código cable, B origen, C destino, E SI/NO"
-                          onClick={() => energizationInputRef.current?.click()}
+                          className="app-menu__item"
+                          onClick={() => {
+                            energizationInputRef.current?.click()
+                            closeAppMenu()
+                          }}
                         >
                           Cargar Excel…
                         </button>
                         <button
                           type="button"
-                          role="menuitem"
-                          className="candados-menu__item"
+                          className="app-menu__item"
                           disabled={!energ.hasData}
-                          title="Borrar Excel memorizado y quitar la capa"
                           onClick={() => {
                             clearEnergizations()
                             setSearchHint('Energizaciones borradas.')
+                            closeAppMenu()
                           }}
                         >
                           Borrar datos
                         </button>
                       </div>
                     </details>
-                    <input
-                      ref={energizationInputRef}
-                      type="file"
-                      accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                      hidden
-                      onChange={(e) => void handleEnergizationExcelChange(e)}
-                    />
-                    </>
-                    )}
+                  )}
+
+                  <div className="app-menu__divider" role="separator" />
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="app-menu__item"
+                    onClick={() => {
+                      collapseAll()
+                      closeAppMenu()
+                    }}
+                  >
+                    Plegar todo
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="app-menu__item"
+                    onClick={() => {
+                      closeAppMenu()
+                      void signOutUser()
+                    }}
+                  >
+                    Salir
+                  </button>
                 </div>
-              </div>
+              </details>
+
+              {isAdmin && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    hidden
+                    onChange={handleLockExcelChange}
+                  />
+                  <input
+                    ref={circuitListInputRef}
+                    type="file"
+                    accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    hidden
+                    onChange={(e) => void handleCircuitListExcelChange(e)}
+                  />
+                  <input
+                    ref={energizationInputRef}
+                    type="file"
+                    accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    hidden
+                    onChange={(e) => void handleEnergizationExcelChange(e)}
+                  />
+                </>
+              )}
+
               <div className="zoom-controls" role="group" aria-label="Zoom">
                 <button
                   type="button"
