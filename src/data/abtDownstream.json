@@ -50469,6 +50469,14 @@
             "voltage": "24",
             "spare": false,
             "virtual": false
+        },
+        {
+            "id": "RLP-VLSY0001",
+            "name": "PANEL, LAUNCH ENABLE, REMOTE",
+            "kind": "consumidor",
+            "voltage": "115",
+            "spare": false,
+            "virtual": false
         }
     ],
     "circuits": [
@@ -185156,6 +185164,27 @@
             "voltage": "230",
             "parallelCables": 1,
             "cableSection": null,
+            "spare": false,
+            "virtual": false,
+            "notes": "jbx-chain"
+        },
+        {
+            "id": "jbx-4sfs0001-01",
+            "excelRow": 1974,
+            "circuitRef": "JBX-4SFS0001-01",
+            "name": "JBX-4SFS0001 → RLP-VLSY0001",
+            "originId": "JBX-4SFS0001",
+            "destinationId": "RLP-VLSY0001",
+            "lineType": "normal",
+            "service": "VS",
+            "protectionName": "01",
+            "protectionModel": null,
+            "protectionCurrentA": null,
+            "pnKW": 0.46,
+            "voltage": "115",
+            "parallelCables": 1,
+            "cableSection": "-",
+            "cableType": "FXW-3",
             "spare": false,
             "virtual": false,
             "notes": "jbx-chain"

@@ -13,9 +13,17 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.join(__dirname, '..')
 const OUT = path.join(ROOT, 'src/data/abtDownstream.json')
-const XL_BASE = path.join(ROOT, '.tmp/xlsm_unpack/unpacked/xl')
+/** Permite Excel Rev.C/D descomprimido: node … [ruta/a/xl] */
+const XL_BASE = path.resolve(
+  process.argv[2] ?? path.join(ROOT, '.tmp/xlsm_unpack/unpacked/xl'),
+)
 const NOTE = 'jbx-chain'
 const LEGACY_NOTES = new Set(['jbx-chain', 'jbx-chain-1160', 'jbx-chain-1160-q06'])
+
+if (!fs.existsSync(path.join(XL_BASE, 'sharedStrings.xml'))) {
+  console.error('No se encuentra Excel descomprimido en', XL_BASE)
+  process.exit(1)
+}
 
 const ssXml = fs.readFileSync(path.join(XL_BASE, 'sharedStrings.xml'), 'utf8')
 const strings = []
@@ -211,12 +219,34 @@ for (const [rn, row] of sktSheet) {
 }
 
 const jbxRows = []
+/** Filas cuyo Circuit cuelga de la propia JBX (p. ej. JBX-4SFS0001-01). */
+const jbxSelfRows = []
 for (const [rn, row] of [...jbxSheet.entries()].sort((a, b) => a[0] - b[0])) {
   const circuit = str(row.L)
-  if (!circuit || !/^SSB-/i.test(circuit)) continue
+  if (!circuit) continue
   const desc = str(row.D)
   const tag = tagFromRow(row, desc)
   const circuitOne = normalizeCircuitRef(circuit)
+
+  const selfM = circuitOne.match(/^(JBX-[A-Z0-9]+)-(\d+)$/i)
+  if (selfM) {
+    jbxSelfRows.push({
+      rn,
+      tag: tag ? tag.toUpperCase() : null,
+      desc,
+      service: str(row.E) || 'NV',
+      pnKW: num(row.G),
+      circuit: circuitOne.toUpperCase(),
+      jbxId: selfM[1].toUpperCase(),
+      suffix: selfM[2],
+      cableType: str(row.M),
+      parallel: num(row.N) || 1,
+      section: row.O != null ? String(row.O).split(/\s+/)[0] : null,
+    })
+    continue
+  }
+
+  if (!/^SSB-/i.test(circuitOne)) continue
   if (!/^SSB-[A-Z0-9]+-Q\d+/i.test(circuitOne)) continue
   jbxRows.push({
     rn,
@@ -418,6 +448,72 @@ for (const [feederRef, rows] of byFeeder) {
   }
 }
 
+/** Hijos con Circuit = JBX-xxxx-nn (p. ej. 400 Hz JBX-4SFS0001-01 → RLP-…). */
+let jbxSelfAdded = 0
+let jbxSelfMissingParent = 0
+const eqById = new Map(file.equipment.map((e) => [e.id, e]))
+for (const row of jbxSelfRows) {
+  const originId = row.jbxId
+  if (!eqById.has(originId) && !file.equipment.some((e) => e.id === originId)) {
+    jbxSelfMissingParent++
+    console.warn('JBX self-child sin padre en topología', row.circuit, row.tag)
+    continue
+  }
+  let tag = row.tag
+  if (!tag) {
+    console.warn('JBX self-child without tag', row.rn, row.circuit, row.desc)
+    continue
+  }
+  const parentEq = eqById.get(originId) || file.equipment.find((e) => e.id === originId)
+  const voltage = String(parentEq?.voltage || '115').replace(/\s*V$/i, '')
+  const sktMeta = socketsByTag.get(tag)
+  const name = defaultName(tag, row.desc, sktMeta)
+  ensureEq(tag, {
+    name,
+    kind: 'consumidor',
+    voltage,
+    local: sktMeta?.local || undefined,
+    spare: false,
+    virtual: false,
+  })
+  eqById.set(tag, file.equipment.find((e) => e.id === tag))
+  if (isSktTag(tag)) touchedSkts.add(tag)
+
+  upsertCircuit({
+    id: slugId('jbx', originId.replace(/^JBX-/i, ''), row.suffix),
+    excelRow: row.rn,
+    circuitRef: row.circuit,
+    name: `${originId} → ${tag}`,
+    originId,
+    destinationId: tag,
+    lineType: 'normal',
+    service: row.service || 'NV',
+    protectionName: row.suffix,
+    protectionModel: null,
+    protectionCurrentA: null,
+    pnKW: row.pnKW,
+    pKWe: row.pnKW,
+    qKVAr: row.pnKW != null ? row.pnKW * 0.75 : null,
+    sKVA: row.pnKW != null ? row.pnKW * 1.25 : null,
+    ibA:
+      row.pnKW != null
+        ? (row.pnKW * 1000) / (Number(voltage) * 0.8 || 184)
+        : null,
+    voltage,
+    parallelCables: row.parallel,
+    cableSection: row.section,
+    cableType: row.cableType,
+    spare: false,
+    virtual: false,
+    notes: NOTE,
+  })
+  added++
+  jbxSelfAdded++
+  if (isSktTag(tag)) {
+    linkDedicated(tag, voltage, row.service, row.circuit)
+  }
+}
+
 /** SKT ya alimentados desde SSB/JBX en topología pero sin fila nested: dedicados */
 for (const c of file.circuits) {
   if (!isSktTag(c.destinationId)) continue
@@ -439,12 +535,21 @@ fs.writeFileSync(OUT, JSON.stringify(file, null, 4) + '\n', 'utf8')
 console.log('Excel feeders:', byFeeder.size)
 console.log('Matched SSB feeds:', feedersOk)
 console.log('Missing SSB feeds:', feedersMissing)
+console.log('JBX self-circuit rows:', jbxSelfRows.length)
+console.log('JBX self-circuit added:', jbxSelfAdded)
+console.log('JBX self-circuit missing parent:', jbxSelfMissingParent)
 if (missingFeeds.length) console.log('Missing sample:', missingFeeds)
 console.log('Added/updated chain circuits:', added)
 console.log('Dedicated SKT→equipment links:', eqDedicated)
 console.log(
   'Chain circuits now:',
   file.circuits.filter((c) => c.notes === NOTE).length,
+)
+console.log(
+  'Sample 4SFS0001 kids:',
+  file.circuits
+    .filter((c) => c.originId === 'JBX-4SFS0001')
+    .map((c) => ({ ref: c.circuitRef, dest: c.destinationId })),
 )
 console.log(
   'Sample 1160 Q01 kids:',
