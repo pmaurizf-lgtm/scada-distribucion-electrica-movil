@@ -1858,6 +1858,8 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
         if (cw < 8 || ch < 8) return
         const padX = Math.max(s.clientWidth, (s.clientWidth - cw) / 2, 24)
         const padY = Math.max(s.clientHeight, (s.clientHeight - ch) / 2, 24)
+        sp.style.width = `${cw}px`
+        sp.style.height = `${ch}px`
         sp.style.paddingLeft = `${padX}px`
         sp.style.paddingRight = `${padX}px`
         sp.style.paddingTop = `${padY}px`
@@ -1926,6 +1928,8 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
         (stage.clientHeight - ch) / 2,
         24,
       )
+      space.style.width = `${cw}px`
+      space.style.height = `${ch}px`
       space.style.paddingLeft = `${padX}px`
       space.style.paddingRight = `${padX}px`
       space.style.paddingTop = `${padY}px`

@@ -1106,9 +1106,11 @@ body {
 
 .plant-zoom-space {
   position: relative;
-  /* El padding de centrado lo aplica JS al plegar/desplegar */
-  min-width: 100%;
-  min-height: 100%;
+  /* Sin min 100%: si el contenido (w×zoom) es más estrecho que el viewport,
+     min-width:100% + transform-origin top-left deja la planta a la izquierda.
+     El padding de centrado lo aplica JS (plegar / encajar / zoom). */
+  min-width: 0;
+  min-height: 0;
   box-sizing: content-box;
   padding: 1.5rem;
 }
