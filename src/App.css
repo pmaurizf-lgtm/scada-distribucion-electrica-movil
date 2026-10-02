@@ -1113,6 +1113,9 @@ body {
   min-height: 0;
   box-sizing: content-box;
   padding: 1.5rem;
+  /* El hijo .plant conserva tamaño de layout sin escala; recortar para que el
+     scroll del stage coincida con lo visible (scale + transform-origin). */
+  overflow: hidden;
 }
 
 /* Vista árbol: caja w×h×zoom + padding JS para centrar (sin min 100%:
@@ -2526,7 +2529,7 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   align-items: flex-start;
   gap: 0;
   width: max-content;
-  min-width: 100%;
+  min-width: max-content;
   overflow: visible;
 }
 

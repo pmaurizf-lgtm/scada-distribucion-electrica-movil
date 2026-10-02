@@ -1244,29 +1244,55 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
     stage.scrollTop = Math.max(0, scrollTop)
     applyingViewRef.current = false
   }
+  const clampStageScroll = (stage: HTMLElement) => {
+    const maxLeft = Math.max(0, stage.scrollWidth - stage.clientWidth)
+    const maxTop = Math.max(0, stage.scrollHeight - stage.clientHeight)
+    stage.scrollLeft = Math.min(Math.max(0, stage.scrollLeft), maxLeft)
+    stage.scrollTop = Math.min(Math.max(0, stage.scrollTop), maxTop)
+  }
+  /** Centra la planta visible en el stage (transform + padding del stage incluidos). */
   const centerSpaceInStage = (
     stage: HTMLElement,
     space: HTMLElement,
     plant: HTMLElement,
     z: number,
   ) => {
-    const cw = plant.offsetWidth * z
-    const ch = plant.offsetHeight * z
+    const pw = plant.offsetWidth
+    const ph = plant.offsetHeight
+    const cw = pw * z
+    const ch = ph * z
     if (cw < 8 || ch < 8) return false
     const { padX, padY } = centerPad(stage, cw, ch)
-    applySpaceBox(
-      stage,
-      space,
-      cw,
-      ch,
-      padX,
-      padY,
-      padX + cw / 2 - stage.clientWidth / 2,
-      padY + ch / 2 - stage.clientHeight / 2,
-    )
+    plant.style.transform = `scale(${z})`
+    plant.style.transformOrigin = 'top left'
+    applySpaceBox(stage, space, cw, ch, padX, padY, 0, 0)
+
+    const stageRect = stage.getBoundingClientRect()
+    const plantRect = plant.getBoundingClientRect()
+    if (plantRect.width < 2 || plantRect.height < 2) return false
+    stage.scrollLeft +=
+      plantRect.left +
+      plantRect.width / 2 -
+      (stageRect.left + stage.clientWidth / 2)
+    stage.scrollTop +=
+      plantRect.top +
+      plantRect.height / 2 -
+      (stageRect.top + stage.clientHeight / 2)
+    clampStageScroll(stage)
     lastCenteredZoom.current = z
     markViewLock(2000)
     return true
+  }
+  const plantVisibleInStage = (stage: HTMLElement, plant: HTMLElement) => {
+    const stageRect = stage.getBoundingClientRect()
+    const plantRect = plant.getBoundingClientRect()
+    const m = 6
+    return (
+      plantRect.right > stageRect.left + m &&
+      plantRect.left < stageRect.right - m &&
+      plantRect.bottom > stageRect.top + m &&
+      plantRect.top < stageRect.bottom - m
+    )
   }
   const onCanvasInteractRef = useRef(onCanvasInteract)
   onCanvasInteractRef.current = onCanvasInteract
@@ -1525,30 +1551,22 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
     const cw = pw * z
     const ch = ph * z
 
+    // Planta más pequeña que el viewport: solo centrar (panPad desplaza fuera de pantalla).
+    if (cw <= stage.clientWidth + 2 && ch <= stage.clientHeight + 2) {
+      centerSpaceInStage(stage, space, plant, z)
+      return
+    }
+
+    if (!plantVisibleInStage(stage, plant)) {
+      centerSpaceInStage(stage, space, plant, z)
+      return
+    }
+
     const oldPadX =
       Number.parseFloat(getComputedStyle(space).paddingLeft) || 0
     const oldPadY = Number.parseFloat(getComputedStyle(space).paddingTop) || 0
     const cx = stage.clientWidth / 2
     const cy = stage.clientHeight / 2
-
-    // ¿El viewport intersecta la planta? Si no, recentrar (evita «desaparecida»).
-    const viewL = stage.scrollLeft
-    const viewR = viewL + stage.clientWidth
-    const viewT = stage.scrollTop
-    const viewB = viewT + stage.clientHeight
-    const plantL = oldPadX
-    const plantR = oldPadX + cw
-    const plantT = oldPadY
-    const plantB = oldPadY + ch
-    const intersects =
-      viewR > plantL + 4 &&
-      viewL < plantR - 4 &&
-      viewB > plantT + 4 &&
-      viewT < plantB - 4
-    if (!intersects) {
-      centerSpaceInStage(stage, space, plant, z)
-      return
-    }
 
     let plantX = (stage.scrollLeft + cx - oldPadX) / z
     let plantY = (stage.scrollTop + cy - oldPadY) / z
