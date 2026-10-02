@@ -1213,6 +1213,61 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
   const markViewLock = (ms = 900) => {
     viewLockUntilRef.current = performance.now() + ms
   }
+  /** Padding justo para centrar (si scroll cae a 0 la planta sigue visible). */
+  const centerPad = (stage: HTMLElement, cw: number, ch: number) => ({
+    padX: Math.max(24, (stage.clientWidth - cw) / 2),
+    padY: Math.max(24, (stage.clientHeight - ch) / 2),
+  })
+  /** Padding ≥ viewport: margen de pan al alejar (zoom/gesto). */
+  const panPad = (stage: HTMLElement, cw: number, ch: number) => ({
+    padX: Math.max(stage.clientWidth, (stage.clientWidth - cw) / 2, 24),
+    padY: Math.max(stage.clientHeight, (stage.clientHeight - ch) / 2, 24),
+  })
+  const applySpaceBox = (
+    stage: HTMLElement,
+    space: HTMLElement,
+    cw: number,
+    ch: number,
+    padX: number,
+    padY: number,
+    scrollLeft: number,
+    scrollTop: number,
+  ) => {
+    applyingViewRef.current = true
+    space.style.width = `${cw}px`
+    space.style.height = `${ch}px`
+    space.style.paddingLeft = `${padX}px`
+    space.style.paddingRight = `${padX}px`
+    space.style.paddingTop = `${padY}px`
+    space.style.paddingBottom = `${padY}px`
+    stage.scrollLeft = Math.max(0, scrollLeft)
+    stage.scrollTop = Math.max(0, scrollTop)
+    applyingViewRef.current = false
+  }
+  const centerSpaceInStage = (
+    stage: HTMLElement,
+    space: HTMLElement,
+    plant: HTMLElement,
+    z: number,
+  ) => {
+    const cw = plant.offsetWidth * z
+    const ch = plant.offsetHeight * z
+    if (cw < 8 || ch < 8) return false
+    const { padX, padY } = centerPad(stage, cw, ch)
+    applySpaceBox(
+      stage,
+      space,
+      cw,
+      ch,
+      padX,
+      padY,
+      padX + cw / 2 - stage.clientWidth / 2,
+      padY + ch / 2 - stage.clientHeight / 2,
+    )
+    lastCenteredZoom.current = z
+    markViewLock(2000)
+    return true
+  }
   const onCanvasInteractRef = useRef(onCanvasInteract)
   onCanvasInteractRef.current = onCanvasInteract
   const notifyCanvasInteract = () => {
@@ -1455,29 +1510,52 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
     if (pinchingRef.current || focusRef.current) return
     if (performance.now() < userGestureUntilRef.current) return
     if (performance.now() < viewLockUntilRef.current) return
+    // Mientras el fit inicial / plegar-desplegar corre: centrar, no anclar.
+    if (fitZoomPending.current || pendingViewFit.current != null) {
+      centerSpaceInStage(stage, space, plant, zoomRef.current)
+      return
+    }
 
     const z = zoomRef.current
     if (z < 0.01) return
-
-    const oldPadX =
-      Number.parseFloat(getComputedStyle(space).paddingLeft) || 0
-    const oldPadY = Number.parseFloat(getComputedStyle(space).paddingTop) || 0
-    const cx = stage.clientWidth / 2
-    const cy = stage.clientHeight / 2
-    const plantX = (stage.scrollLeft + cx - oldPadX) / z
-    const plantY = (stage.scrollTop + cy - oldPadY) / z
 
     const pw = plant.offsetWidth
     const ph = plant.offsetHeight
     if (pw < 1 || ph < 1) return
     const cw = pw * z
     const ch = ph * z
-    const padX = Math.max(stage.clientWidth, (stage.clientWidth - cw) / 2, 24)
-    const padY = Math.max(
-      stage.clientHeight,
-      (stage.clientHeight - ch) / 2,
-      24,
-    )
+
+    const oldPadX =
+      Number.parseFloat(getComputedStyle(space).paddingLeft) || 0
+    const oldPadY = Number.parseFloat(getComputedStyle(space).paddingTop) || 0
+    const cx = stage.clientWidth / 2
+    const cy = stage.clientHeight / 2
+
+    // ¿El viewport intersecta la planta? Si no, recentrar (evita «desaparecida»).
+    const viewL = stage.scrollLeft
+    const viewR = viewL + stage.clientWidth
+    const viewT = stage.scrollTop
+    const viewB = viewT + stage.clientHeight
+    const plantL = oldPadX
+    const plantR = oldPadX + cw
+    const plantT = oldPadY
+    const plantB = oldPadY + ch
+    const intersects =
+      viewR > plantL + 4 &&
+      viewL < plantR - 4 &&
+      viewB > plantT + 4 &&
+      viewT < plantB - 4
+    if (!intersects) {
+      centerSpaceInStage(stage, space, plant, z)
+      return
+    }
+
+    let plantX = (stage.scrollLeft + cx - oldPadX) / z
+    let plantY = (stage.scrollTop + cy - oldPadY) / z
+    plantX = Math.min(Math.max(0, plantX), pw)
+    plantY = Math.min(Math.max(0, plantY), ph)
+
+    const { padX, padY } = panPad(stage, cw, ch)
 
     let left = padX + plantX * z - cx
     let top = padY + plantY * z - cy
@@ -1486,18 +1564,9 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
     left = Math.min(Math.max(0, left), maxLeft)
     top = Math.min(Math.max(0, top), maxTop)
 
-    applyingViewRef.current = true
-    space.style.width = `${cw}px`
-    space.style.height = `${ch}px`
-    space.style.paddingLeft = `${padX}px`
-    space.style.paddingRight = `${padX}px`
-    space.style.paddingTop = `${padY}px`
-    space.style.paddingBottom = `${padY}px`
+    applySpaceBox(stage, space, cw, ch, padX, padY, left, top)
     plant.style.transform = `scale(${z})`
     plant.style.transformOrigin = 'top left'
-    stage.scrollLeft = left
-    stage.scrollTop = top
-    applyingViewRef.current = false
   }, [])
 
   /** Chrome móvil oculto/visible: el stage cambia de alto → anclar, no reencajar. */
@@ -1798,23 +1867,8 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
           centerPending.current = false
           return
         }
-        const z = zoomRef.current
-        const cw = w * z
-        const ch = h * z
-        const padX = Math.max(24, (s.clientWidth - cw) / 2)
-        const padY = Math.max(24, (s.clientHeight - ch) / 2)
-        applyingViewRef.current = true
-        sp.style.width = `${cw}px`
-        sp.style.height = `${ch}px`
-        sp.style.paddingLeft = `${padX}px`
-        sp.style.paddingRight = `${padX}px`
-        sp.style.paddingTop = `${padY}px`
-        sp.style.paddingBottom = `${padY}px`
-        s.scrollLeft = Math.max(0, padX + cw / 2 - s.clientWidth / 2)
-        s.scrollTop = Math.max(0, padY + ch / 2 - s.clientHeight / 2)
-        applyingViewRef.current = false
+        centerSpaceInStage(s, sp, p, zoomRef.current)
         centerPending.current = false
-        markViewLock(1200)
       })
     }
     return true
@@ -1850,13 +1904,9 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
       }
 
       setPlantSize({ w, h })
-      if (opts?.clearPending !== false) {
-        fitZoomPending.current = false
-        pendingViewFit.current = null
-      }
       centerPending.current = true
       pendingZoomScroll.current = null
-      markViewLock(1200)
+      markViewLock(2500)
 
       const applyCenterNow = () => {
         const s = panRef.current
@@ -1867,25 +1917,13 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
           return
         }
         const z = mode === 'zoom100' ? 1 : zoomRef.current
-        const cw = p.offsetWidth * z
-        const ch = p.offsetHeight * z
-        if (cw < 8 || ch < 8) return
-        // Padding ≥ viewport: margen para pan al alejar; scroll al centro de la planta
-        const padX = Math.max(s.clientWidth, (s.clientWidth - cw) / 2, 24)
-        const padY = Math.max(s.clientHeight, (s.clientHeight - ch) / 2, 24)
-        applyingViewRef.current = true
-        sp.style.width = `${cw}px`
-        sp.style.height = `${ch}px`
-        sp.style.paddingLeft = `${padX}px`
-        sp.style.paddingRight = `${padX}px`
-        sp.style.paddingTop = `${padY}px`
-        sp.style.paddingBottom = `${padY}px`
-        s.scrollLeft = Math.max(0, padX + cw / 2 - s.clientWidth / 2)
-        s.scrollTop = Math.max(0, padY + ch / 2 - s.clientHeight / 2)
-        applyingViewRef.current = false
+        if (!centerSpaceInStage(s, sp, p, z)) return
         centerPending.current = false
-        lastCenteredZoom.current = z
-        markViewLock(1200)
+        // Limpiar flags solo tras centrar (si no, preserve puede anclar en vacío).
+        if (opts?.clearPending !== false) {
+          fitZoomPending.current = false
+          pendingViewFit.current = null
+        }
       }
 
       if (Math.abs(next - zoomRef.current) >= 0.01) {
@@ -1934,30 +1972,7 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
     if (pinchingRef.current) return
 
     const applyCenter = () => {
-      const z = zoom
-      // Medida en vivo: plantSize puede quedar del despliegue anterior
-      const cw = plant.offsetWidth * z
-      const ch = plant.offsetHeight * z
-      if (cw < 8 || ch < 8) return
-      // Padding ≥ viewport: permite scroll al alejar sin saltar al origen
-      const padX = Math.max(stage.clientWidth, (stage.clientWidth - cw) / 2, 24)
-      const padY = Math.max(
-        stage.clientHeight,
-        (stage.clientHeight - ch) / 2,
-        24,
-      )
-      applyingViewRef.current = true
-      space.style.width = `${cw}px`
-      space.style.height = `${ch}px`
-      space.style.paddingLeft = `${padX}px`
-      space.style.paddingRight = `${padX}px`
-      space.style.paddingTop = `${padY}px`
-      space.style.paddingBottom = `${padY}px`
-      stage.scrollLeft = Math.max(0, padX + cw / 2 - stage.clientWidth / 2)
-      stage.scrollTop = Math.max(0, padY + ch / 2 - stage.clientHeight / 2)
-      applyingViewRef.current = false
-      lastCenteredZoom.current = zoom
-      markViewLock(1200)
+      centerSpaceInStage(stage, space, plant, zoom)
     }
 
     // Zoom a puntero (planta y árbol): aplicar scroll/padding pendientes
@@ -2002,9 +2017,11 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
       return
     }
 
-    // Tras pellizco/pan/centrado: no recentrar (rompe el scroll o anula el fit).
+    // Tras pellizco/pan/centrado/fit: no anclar (rompe el scroll o anula el fit).
     if (
       pinchingRef.current ||
+      fitZoomPending.current ||
+      pendingViewFit.current != null ||
       performance.now() < userGestureUntilRef.current ||
       performance.now() < viewLockUntilRef.current
     ) {
@@ -2040,10 +2057,7 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
       applyPlantViewFit(fitMode, { clearPending: isLast })
       if (!isLast) {
         window.setTimeout(() => tryFit(i + 1), delays[i + 1]! - delays[i]!)
-        return
       }
-      fitZoomPending.current = false
-      pendingViewFit.current = null
     }
 
     const t = window.setTimeout(() => tryFit(0), delays[0])
@@ -2072,6 +2086,7 @@ export const CascadeView = forwardRef<CascadeViewHandle, CascadeViewProps>(
         if (pinchingRef.current || focusRef.current) return
         if (performance.now() < userGestureUntilRef.current) return
         if (performance.now() < viewLockUntilRef.current) return
+        if (fitZoomPending.current || pendingViewFit.current != null) return
         const plant = plantRef.current
         if (plant) {
           const pw = plant.offsetWidth
