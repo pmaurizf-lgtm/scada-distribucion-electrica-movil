@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -17,6 +18,7 @@ import {
   getDeckPlan,
   hitsForLocal,
   listDeckPlans,
+  planIdFromLocalDeck,
   saveLocalOverrideHit,
   SCADA_DECK_PLAN_OVERRIDES_CHANGED,
   type DeckPlanHit,
@@ -41,36 +43,56 @@ export function DeckPlanViewer({
 }: Props) {
   const isMobile = useIsMobileUi()
   const browseOnly = !local?.trim()
+  /** Cubierta del local (cifra antes del guion): 1≠01, 2≠02, … */
+  const preferredPlanId = useMemo(() => {
+    if (browseOnly) return listDeckPlans()[0]?.id ?? ''
+    const fromLocal = planIdFromLocalDeck(local)
+    if (fromLocal && getDeckPlan(fromLocal)) return fromLocal
+    return listDeckPlans()[0]?.id ?? ''
+  }, [local, browseOnly])
   const [index, setIndex] = useState(0)
   const [adjustMode, setAdjustMode] = useState(false)
   const [tick, setTick] = useState(0)
   const [exportHint, setExportHint] = useState<string | null>(null)
   const [exportPreview, setExportPreview] = useState<string | null>(null)
-  const [fallbackPlanId, setFallbackPlanId] = useState(
-    () => listDeckPlans()[0]?.id ?? '',
-  )
+  const [fallbackPlanId, setFallbackPlanId] = useState(preferredPlanId)
   const hits = useMemo(
     () => (browseOnly ? [] : hitsForLocal(local)),
     [local, tick, browseOnly],
   )
 
-  const hit: DeckPlanHit | undefined =
-    hits.length > 0
-      ? hits[Math.min(index, hits.length - 1)]
-      : fallbackPlanId
-        ? {
-            planId: fallbackPlanId,
-            x: (getDeckPlan(fallbackPlanId)?.width ?? 4500) / 2,
-            y: (getDeckPlan(fallbackPlanId)?.height ?? 800) / 2,
-            w: 100,
-            h: 60,
-            conf: 0,
-          }
-        : undefined
+  /** Índice del hit en la cubierta del local, o -1 si no hay marca en esa cubierta. */
+  const preferredHitIndex = useMemo(() => {
+    if (hits.length === 0 || !preferredPlanId) return -1
+    return hits.findIndex((h) => h.planId === preferredPlanId)
+  }, [hits, preferredPlanId])
+
+  const hasIndexedHits = hits.length > 0
+  /** Sin marca en la cubierta del local: abrir esa cubierta (centro), no la principal. */
+  const useDeckFromLocal =
+    !browseOnly && preferredHitIndex < 0 && Boolean(preferredPlanId)
+
+  const hit: DeckPlanHit | undefined = (() => {
+    // Hay marca en la cubierta del local (u otras): respetar índice (init → preferida).
+    if (hasIndexedHits && preferredHitIndex >= 0) {
+      return hits[Math.min(index, hits.length - 1)]
+    }
+    const planId = useDeckFromLocal
+      ? preferredPlanId
+      : fallbackPlanId || preferredPlanId
+    if (!planId) return undefined
+    return {
+      planId,
+      x: (getDeckPlan(planId)?.width ?? 4500) / 2,
+      y: (getDeckPlan(planId)?.height ?? 800) / 2,
+      w: 100,
+      h: 60,
+      conf: 0,
+    }
+  })()
 
   const plan = hit ? getDeckPlan(hit.planId) : undefined
-  const hasIndexedHits = hits.length > 0
-  const selectedPlanId = hit?.planId || fallbackPlanId
+  const selectedPlanId = hit?.planId || fallbackPlanId || preferredPlanId
 
   const selectPlan = (planId: string) => {
     if (browseOnly) {
@@ -112,10 +134,17 @@ export function DeckPlanViewer({
     setZoom(z)
   }, [])
 
-  useEffect(() => {
-    setIndex(0)
-    setAdjustMode(!browseOnly && !hasIndexedHits)
-  }, [local, hasIndexedHits, browseOnly])
+  useLayoutEffect(() => {
+    setFallbackPlanId(preferredPlanId)
+    if (preferredHitIndex >= 0) {
+      setIndex(preferredHitIndex)
+      setAdjustMode(false)
+    } else {
+      setIndex(0)
+      setAdjustMode(!browseOnly)
+    }
+    setImgSize({ w: 0, h: 0 })
+  }, [local, preferredPlanId, preferredHitIndex, browseOnly])
 
   useEffect(() => {
     const onChange = () => setTick((t) => t + 1)
@@ -126,8 +155,19 @@ export function DeckPlanViewer({
 
   useEffect(() => {
     if (!hit || imgSize.w < 1) return
-    centerOnHit(hit, hasIndexedHits ? START_Z : 0.85)
-  }, [hit?.planId, hit?.x, hit?.y, imgSize.w, imgSize.h, centerOnHit, tick, hasIndexedHits])
+    // Marca indexada en la cubierta del local → zoom cercano; si no, vista general.
+    const z = preferredHitIndex >= 0 ? START_Z : 0.85
+    centerOnHit(hit, z)
+  }, [
+    hit?.planId,
+    hit?.x,
+    hit?.y,
+    imgSize.w,
+    imgSize.h,
+    centerOnHit,
+    tick,
+    preferredHitIndex,
+  ])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

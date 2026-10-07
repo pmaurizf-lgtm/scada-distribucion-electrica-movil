@@ -17,7 +17,13 @@ import { migrateHitPlanIds, migratePlanId } from './planIds'
 
 export type { DeckPlanHit, DeckPlanMeta, DeckPlanManifest, DeckPlanHitsFile }
 export { normalizeLocalCode, localLookupKeys, localStorageKey } from './normalize'
-export { migratePlanId, LEGACY_PLAN_IDS } from './planIds'
+export {
+  migratePlanId,
+  LEGACY_PLAN_IDS,
+  LOCAL_DECK_TO_PLAN_ID,
+  localDeckPrefix,
+  planIdFromLocalDeck,
+} from './planIds'
 export {
   requestOpenDeckPlan,
   SCADA_OPEN_DECK_PLAN_EVENT,
