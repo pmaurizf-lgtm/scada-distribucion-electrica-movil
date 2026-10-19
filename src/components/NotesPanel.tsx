@@ -16,6 +16,7 @@ import { useIsMobileUi } from '../hooks/useIsMobileUi'
 import { useAuth } from '../auth'
 
 type Filter = 'open' | 'resolved' | 'all'
+type DateSort = 'date-desc' | 'date-asc'
 
 type NotesPanelProps = {
   open: boolean
@@ -96,6 +97,7 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
   const { isAdmin } = useAuth()
   const isMobile = useIsMobileUi()
   const [filter, setFilter] = useState<Filter>('open')
+  const [dateSort, setDateSort] = useState<DateSort>('date-desc')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [authorFilter, setAuthorFilter] = useState('')
@@ -172,17 +174,30 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
       }
       g.notes.push(n)
     }
+    const byDate = (a: InspectionNote, b: InspectionNote) =>
+      dateSort === 'date-asc'
+        ? a.createdAt.localeCompare(b.createdAt)
+        : b.createdAt.localeCompare(a.createdAt)
+
     return [...map.values()]
       .map((g) => ({
         ...g,
-        notes: [...g.notes].sort((a, b) =>
-          b.createdAt.localeCompare(a.createdAt),
-        ),
+        notes: [...g.notes].sort(byDate),
       }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'es'))
+      .sort((a, b) => {
+        const aDate = a.notes[0]?.createdAt ?? ''
+        const bDate = b.notes[0]?.createdAt ?? ''
+        if (aDate && bDate && aDate !== bDate) {
+          return dateSort === 'date-asc'
+            ? aDate.localeCompare(bDate)
+            : bDate.localeCompare(aDate)
+        }
+        return a.label.localeCompare(b.label, 'es')
+      })
   }, [
     notes,
     filter,
+    dateSort,
     dateFrom,
     dateTo,
     authorFilter,
@@ -358,6 +373,18 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                 min={dateFrom || undefined}
                 onChange={(e) => setDateTo(e.target.value)}
               />
+            </label>
+            <label className="notes-panel__filter-field">
+              <span>Orden</span>
+              <select
+                className="notes-panel__filter-input"
+                value={dateSort}
+                onChange={(e) => setDateSort(e.target.value as DateSort)}
+                aria-label="Ordenar por fecha"
+              >
+                <option value="date-desc">Más recientes</option>
+                <option value="date-asc">Más antiguas</option>
+              </select>
             </label>
             <label className="notes-panel__filter-field">
               <span>Usuario</span>
