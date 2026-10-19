@@ -11338,11 +11338,29 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   border-bottom: 1px solid var(--border);
 }
 
+.notes-panel__filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 1rem;
+  flex: 1 1 auto;
+}
+
 .notes-panel__filters,
+.notes-panel__sort,
 .notes-panel__io {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.35rem;
+}
+
+.notes-panel__sort-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted, #9aa7b5);
+  margin-right: 0.15rem;
 }
 
 .notes-panel__filters-extra {

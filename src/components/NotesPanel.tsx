@@ -327,27 +327,51 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
         </header>
 
         <div className="notes-panel__toolbar">
-          <div
-            className="notes-panel__filters"
-            role="group"
-            aria-label="Estado"
-          >
-            {(
-              [
-                ['open', 'Abiertas'],
-                ['resolved', 'Resueltas'],
-                ['all', 'Todas'],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                className={`btn${filter === id ? ' btn--active' : ''}`}
-                onClick={() => setFilter(id)}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="notes-panel__filters-row">
+            <div
+              className="notes-panel__filters"
+              role="group"
+              aria-label="Estado"
+            >
+              {(
+                [
+                  ['open', 'Abiertas'],
+                  ['resolved', 'Resueltas'],
+                  ['all', 'Todas'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`btn${filter === id ? ' btn--active' : ''}`}
+                  onClick={() => setFilter(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div
+              className="notes-panel__sort"
+              role="group"
+              aria-label="Ordenar por fecha"
+            >
+              <span className="notes-panel__sort-label">Por fecha</span>
+              {(
+                [
+                  ['date-desc', 'Más recientes'],
+                  ['date-asc', 'Más antiguas'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`btn${dateSort === id ? ' btn--active' : ''}`}
+                  onClick={() => setDateSort(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           <div
             className="notes-panel__filters-extra"
@@ -373,18 +397,6 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                 min={dateFrom || undefined}
                 onChange={(e) => setDateTo(e.target.value)}
               />
-            </label>
-            <label className="notes-panel__filter-field">
-              <span>Orden</span>
-              <select
-                className="notes-panel__filter-input"
-                value={dateSort}
-                onChange={(e) => setDateSort(e.target.value as DateSort)}
-                aria-label="Ordenar por fecha"
-              >
-                <option value="date-desc">Más recientes</option>
-                <option value="date-asc">Más antiguas</option>
-              </select>
             </label>
             <label className="notes-panel__filter-field">
               <span>Usuario</span>
