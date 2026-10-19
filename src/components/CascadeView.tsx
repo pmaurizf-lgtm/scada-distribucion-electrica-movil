@@ -2921,6 +2921,26 @@ function BoardColumn({
   const tie = board.busTie[0]
   const tieTag = tieSide === 'left' ? tagB : tagA
 
+  const eqBalloon = useEquipInfoBalloon()
+  const headRef = useRef<HTMLButtonElement>(null)
+  const boardEquip = useMemo(
+    () => system690.equipment.find((e) => e.id === board.id),
+    [board.id],
+  )
+  const boardFeedSummaries = useMemo(
+    () =>
+      board.gens.map((g) => ({
+        name: g.breaker.protectionName,
+        lineType: 'normal' as const,
+        originId: g.gen.id,
+      })),
+    [board.gens],
+  )
+  const boardFeedCircuits = useMemo(
+    () => board.gens.map((g) => g.breaker),
+    [board.gens],
+  )
+
   const showBoard =
     !focusCircuitIds ||
     sb.length > 0 ||
@@ -3068,10 +3088,18 @@ function BoardColumn({
       }}
     >
       <button
+        ref={(el) => {
+          headRef.current = el
+          eqBalloon.setAnchorEl(el)
+        }}
         type="button"
         className="plant-msb__head"
         aria-label={`Doble clic para ${expanded ? 'plegar' : 'desplegar'}`}
-        onClick={(e) => e.stopPropagation()}
+        {...eqBalloon.bind}
+        onClick={(e) => {
+          eqBalloon.bind.onClick(e)
+          e.stopPropagation()
+        }}
         onDoubleClick={toggleBoard}
       >
         <span className="plant-msb__chev">{expanded ? '▾' : '▸'}</span>
@@ -3082,6 +3110,15 @@ function BoardColumn({
           {focusCircuitIds ? ` / ${board.feeders.length}` : ''} salidas · doble
           clic · {expanded ? 'plegar' : 'desplegar'}
         </span>
+        {eqBalloon.show && boardEquip && (
+          <EquipmentBalloon
+            equipment={boardEquip}
+            feeds={boardFeedSummaries}
+            circuits={boardFeedCircuits}
+            anchorRef={headRef}
+            sheet={eqBalloon.sheet}
+          />
+        )}
       </button>
 
       {/* Generadores fuera del recuadro; clic = arrancar/parar */}
