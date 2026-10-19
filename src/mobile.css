@@ -484,6 +484,35 @@ html.scada-mobile .notes-panel__filters {
   gap: 0.35rem;
 }
 
+html.scada-mobile .notes-panel__filters-extra {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+html.scada-mobile .notes-panel__filter-field {
+  min-width: 0;
+  font-size: 0.72rem;
+}
+
+html.scada-mobile .notes-panel__filter-field--grow {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+html.scada-mobile .notes-panel__filter-input {
+  min-height: var(--touch-min, 2.75rem);
+  font-size: 0.9rem;
+  padding: 0.45rem 0.55rem;
+}
+
+html.scada-mobile .notes-panel__filter-clear {
+  grid-column: 1 / -1;
+  min-height: var(--touch-min, 2.75rem);
+  width: 100%;
+}
+
 html.scada-mobile .notes-panel__filters .btn,
 html.scada-mobile .notes-panel__io .btn,
 html.scada-mobile .note-editor__list-toggle,

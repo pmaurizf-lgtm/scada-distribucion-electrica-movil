@@ -11345,6 +11345,60 @@ body:has(.notes-modal-backdrop) .circuit-balloon {
   gap: 0.35rem;
 }
 
+.notes-panel__filters-extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.45rem 0.55rem;
+  flex: 1 0 100%;
+  width: 100%;
+  margin-top: 0.15rem;
+  order: 2;
+}
+
+.notes-panel__io {
+  order: 3;
+}
+
+.notes-panel__filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 8.5rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted, #9aa7b5);
+}
+
+.notes-panel__filter-field--grow {
+  flex: 1 1 12rem;
+  min-width: 11rem;
+}
+
+.notes-panel__filter-input {
+  width: 100%;
+  min-height: 2.1rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg, #121820);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.notes-panel__filter-input:focus {
+  outline: 1px solid var(--accent, #e6c200);
+  outline-offset: 1px;
+}
+
+.notes-panel__filter-clear {
+  align-self: flex-end;
+}
+
 .notes-panel__io-excel {
   display: flex;
   flex-wrap: wrap;

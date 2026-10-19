@@ -33,6 +33,24 @@ function formatDate(iso: string): string {
   }
 }
 
+/** Día local YYYY-MM-DD a partir de createdAt ISO. */
+function noteCreatedDay(iso: string): string {
+  try {
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return iso.slice(0, 10)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  } catch {
+    return iso.slice(0, 10)
+  }
+}
+
+function noteAuthorKey(n: InspectionNote): string {
+  return (n.authorId || n.author || '').trim()
+}
+
 function syncHint(sync: {
   enabled: boolean
   state: string
@@ -78,15 +96,64 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
   const { isAdmin } = useAuth()
   const isMobile = useIsMobileUi()
   const [filter, setFilter] = useState<Filter>('open')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [authorFilter, setAuthorFilter] = useState('')
+  const [equipQuery, setEquipQuery] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [ioOpen, setIoOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const importRef = useRef<HTMLInputElement>(null)
 
+  const authorOptions = useMemo(() => {
+    const byKey = new Map<string, string>()
+    for (const n of notes) {
+      const key = noteAuthorKey(n)
+      if (!key) continue
+      if (!byKey.has(key)) byKey.set(key, n.author.trim() || key)
+    }
+    return [...byKey.entries()]
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'es'))
+  }, [notes])
+
+  const hasExtraFilters = Boolean(
+    dateFrom || dateTo || authorFilter || equipQuery.trim(),
+  )
+
+  const clearExtraFilters = () => {
+    setDateFrom('')
+    setDateTo('')
+    setAuthorFilter('')
+    setEquipQuery('')
+  }
+
   const groups = useMemo(() => {
+    const equipQ = equipQuery.trim().toLowerCase()
     const filtered = notes.filter((n) => {
-      if (filter === 'open') return noteHasOpenLines(n)
-      if (filter === 'resolved') return isNoteFullyResolved(n)
+      if (filter === 'open' && !noteHasOpenLines(n)) return false
+      if (filter === 'resolved' && !isNoteFullyResolved(n)) return false
+      if (authorFilter && noteAuthorKey(n) !== authorFilter) return false
+      if (dateFrom || dateTo) {
+        const day = noteCreatedDay(n.createdAt)
+        if (dateFrom && day < dateFrom) return false
+        if (dateTo && day > dateTo) return false
+      }
+      if (equipQ) {
+        const label = labelFor(n.target).toLowerCase()
+        const kind = kindLabelFor(n.target).toLowerCase()
+        const id =
+          n.target.kind === 'equipment'
+            ? n.target.equipmentId.toLowerCase()
+            : n.target.circuitId.toLowerCase()
+        if (
+          !label.includes(equipQ) &&
+          !kind.includes(equipQ) &&
+          !id.includes(equipQ)
+        ) {
+          return false
+        }
+      }
       return true
     })
     const map = new Map<string, Group>()
@@ -113,7 +180,16 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
         ),
       }))
       .sort((a, b) => a.label.localeCompare(b.label, 'es'))
-  }, [notes, filter, labelFor, kindLabelFor])
+  }, [
+    notes,
+    filter,
+    dateFrom,
+    dateTo,
+    authorFilter,
+    equipQuery,
+    labelFor,
+    kindLabelFor,
+  ])
 
   if (!open || typeof document === 'undefined') return null
 
@@ -236,7 +312,11 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
         </header>
 
         <div className="notes-panel__toolbar">
-          <div className="notes-panel__filters" role="group" aria-label="Filtro">
+          <div
+            className="notes-panel__filters"
+            role="group"
+            aria-label="Estado"
+          >
             {(
               [
                 ['open', 'Abiertas'],
@@ -253,6 +333,67 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
                 {label}
               </button>
             ))}
+          </div>
+          <div
+            className="notes-panel__filters-extra"
+            role="group"
+            aria-label="Filtros de notas"
+          >
+            <label className="notes-panel__filter-field">
+              <span>Desde</span>
+              <input
+                type="date"
+                className="notes-panel__filter-input"
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </label>
+            <label className="notes-panel__filter-field">
+              <span>Hasta</span>
+              <input
+                type="date"
+                className="notes-panel__filter-input"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </label>
+            <label className="notes-panel__filter-field">
+              <span>Usuario</span>
+              <select
+                className="notes-panel__filter-input"
+                value={authorFilter}
+                onChange={(e) => setAuthorFilter(e.target.value)}
+              >
+                <option value="">Todos</option>
+                {authorOptions.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="notes-panel__filter-field notes-panel__filter-field--grow">
+              <span>Equipo</span>
+              <input
+                type="search"
+                className="notes-panel__filter-input"
+                placeholder="Equipo o interruptor…"
+                value={equipQuery}
+                onChange={(e) => setEquipQuery(e.target.value)}
+                autoComplete="off"
+              />
+            </label>
+            {hasExtraFilters && (
+              <button
+                type="button"
+                className="btn notes-panel__filter-clear"
+                onClick={clearExtraFilters}
+              >
+                Limpiar
+              </button>
+            )}
           </div>
           <div className="notes-panel__io">
             <div className="notes-panel__io-excel">
@@ -343,13 +484,15 @@ export function NotesPanel({ open, onClose }: NotesPanelProps) {
         <div className="notes-panel__body">
           {groups.length === 0 ? (
             <p className="notes-panel__empty">
-              No hay notas{' '}
-              {filter === 'open'
-                ? 'con líneas abiertas'
-                : filter === 'resolved'
-                  ? 'totalmente resueltas'
-                  : ''}{' '}
-              en este buque. Ábrelas desde el globo de un equipo o interruptor.
+              {hasExtraFilters
+                ? 'Ninguna nota coincide con los filtros. Prueba a ampliar fechas, usuario o equipo.'
+                : `No hay notas ${
+                    filter === 'open'
+                      ? 'con líneas abiertas'
+                      : filter === 'resolved'
+                        ? 'totalmente resueltas'
+                        : ''
+                  } en este buque. Ábrelas desde el globo de un equipo o interruptor.`}
             </p>
           ) : (
             groups.map((g) => (
